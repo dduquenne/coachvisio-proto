@@ -12,6 +12,13 @@ export async function POST(req: Request) {
       return new Response("Transcript invalide", { status: 400 })
     }
 
+    if (!transcript.length) {
+      return new Response(
+        JSON.stringify({ summary: "⚠️ Aucune conversation fournie." }),
+        { headers: { "Content-Type": "application/json" } }
+      )
+    }
+
     const privacyPrompt =
       "Ne fais aucune référence à des informations concernant le propriétaire du compte ChatGPT ou son identité. Base ton analyse uniquement sur la transcription fournie."
 
