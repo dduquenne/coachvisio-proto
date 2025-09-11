@@ -1,6 +1,6 @@
 "use client"
 
-import { useRef, useState } from "react"
+import { useRef, useState, useEffect } from "react"
 import type { Message } from "./MessageList"
 
 type Props = {
@@ -11,7 +11,22 @@ type Props = {
 export default function Composer({ onSend, disabled }: Props) {
   const [text, setText] = useState("")
   const [recording, setRecording] = useState(false)
-  const recognitionRef = useRef<SpeechRecognition | null>(null)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const recognitionRef = useRef<any>(null)
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const SpeechRecognitionClass =
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (window as any).SpeechRecognition ||
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (window as any).webkitSpeechRecognition
+
+      if (SpeechRecognitionClass) {
+        recognitionRef.current = new SpeechRecognitionClass()
+      }
+    }
+  }, [])
 
   const handleSend = () => {
     if (!text.trim() || disabled) return
