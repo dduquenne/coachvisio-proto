@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useRef, useState } from "react"
 import type { Message } from "./MessageList"
 
 type Props = {
@@ -10,6 +10,8 @@ type Props = {
 
 export default function Composer({ onSend, disabled }: Props) {
   const [text, setText] = useState("")
+  const [recording, setRecording] = useState(false)
+  const recognitionRef = useRef<SpeechRecognition | null>(null)
 
   const handleSend = () => {
     if (!text.trim() || disabled) return
@@ -19,6 +21,43 @@ export default function Composer({ onSend, disabled }: Props) {
       content: text.trim(),
     })
     setText("")
+  }
+
+  const startRecording = () => {
+    if (recording || disabled) return
+    const SpeechRecognition =
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (window as any).SpeechRecognition ||
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (window as any).webkitSpeechRecognition
+    if (!SpeechRecognition) {
+      alert("La reconnaissance vocale n'est pas supportée par ce navigateur.")
+      return
+    }
+    const recognition: SpeechRecognition = new SpeechRecognition()
+    recognition.lang = "fr-FR"
+    recognition.interimResults = false
+    recognition.onresult = e => {
+      const transcript = e.results[0][0].transcript
+      onSend({
+        id: Date.now().toString(),
+        role: "user",
+        content: transcript,
+      })
+    }
+    recognition.onerror = () => {
+      setRecording(false)
+    }
+    recognition.onend = () => {
+      setRecording(false)
+    }
+    recognitionRef.current = recognition
+    recognition.start()
+    setRecording(true)
+  }
+
+  const stopRecording = () => {
+    recognitionRef.current?.stop()
   }
 
   return (
@@ -40,6 +79,13 @@ export default function Composer({ onSend, disabled }: Props) {
           disabled={disabled}
           className="flex-1 rounded border px-3 py-2 disabled:bg-gray-100"
         />
+        <button
+          onClick={recording ? stopRecording : startRecording}
+          disabled={disabled}
+          className="rounded-full bg-gray-200 p-2 text-gray-800 shadow disabled:opacity-50"
+        >
+          {recording ? "⏹️" : "🎤"}
+        </button>
         <button
           onClick={handleSend}
           disabled={disabled}
