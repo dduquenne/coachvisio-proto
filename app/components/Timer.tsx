@@ -2,28 +2,31 @@
 
 import { useEffect, useState, useRef } from "react"
 
-export default function Timer() {
-  const [duration, setDuration] = useState(5) // durée initiale en minutes
-  const [remaining, setRemaining] = useState(duration * 60) // en secondes
-  const [running, setRunning] = useState(false)
+type Props = {
+  onStateChange?: (state: "idle" | "running" | "finished") => void
+}
+
+export default function Timer({ onStateChange }: Props) {
+  const [duration, setDuration] = useState(5) // minutes
+  const [remaining, setRemaining] = useState(duration * 60) // secondes
+  const [state, setState] = useState<"idle" | "running" | "finished">("idle")
   const intervalRef = useRef<NodeJS.Timeout | null>(null)
 
-  // Formater mm:ss
   const formatTime = (seconds: number) => {
     const m = Math.floor(seconds / 60).toString().padStart(2, "0")
     const s = Math.floor(seconds % 60).toString().padStart(2, "0")
     return `${m}:${s}`
   }
 
-  // Quand on clique sur Start
   const start = () => {
-    if (running) return
-    setRunning(true)
+    if (state === "running") return
+    setState("running")
     intervalRef.current = setInterval(() => {
       setRemaining(prev => {
         if (prev <= 1) {
           clearInterval(intervalRef.current!)
-          setRunning(false)
+          setState("finished") // fin du chrono
+          setRemaining(0)
           return 0
         }
         return prev - 1
@@ -31,20 +34,23 @@ export default function Timer() {
     }, 1000)
   }
 
-  // Quand on clique sur Stop
   const stop = () => {
     if (intervalRef.current) clearInterval(intervalRef.current)
-    setRunning(false)
+    setState("finished")
   }
 
-  // Reset timer à la durée choisie
   const reset = () => {
     if (intervalRef.current) clearInterval(intervalRef.current)
     setRemaining(duration * 60)
-    setRunning(false)
+    setState("idle")
   }
 
-  // Si la durée change, remettre le compteur
+  // Notifie le parent proprement à chaque changement d’état
+  useEffect(() => {
+    onStateChange?.(state)
+  }, [state, onStateChange])
+
+  // Quand on change la durée, on reset automatiquement
   useEffect(() => {
     reset()
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -68,14 +74,14 @@ export default function Timer() {
       <div className="flex justify-center gap-2">
         <button
           onClick={start}
-          disabled={running}
+          disabled={state === "running"}
           className="rounded-2xl bg-green-500 px-4 py-2 text-white shadow disabled:opacity-50"
         >
           Start
         </button>
         <button
           onClick={stop}
-          disabled={!running}
+          disabled={state !== "running"}
           className="rounded-2xl bg-red-500 px-4 py-2 text-white shadow disabled:opacity-50"
         >
           Stop
