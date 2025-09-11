@@ -12,10 +12,14 @@ export async function POST(req: Request) {
       return new Response("Transcript invalide", { status: 400 })
     }
 
+    const privacyPrompt =
+      "Ne fais aucune référence à des informations concernant le propriétaire du compte ChatGPT ou son identité. Base ton analyse uniquement sur la transcription fournie."
+
     const completion = await client.chat.completions.create({
       model: "gpt-4o-mini",
       temperature: 0.5,
       messages: [
+        { role: "system", content: privacyPrompt },
         {
           role: "system",
           content: `Tu es un évaluateur professionnel d'entretien simulé.
