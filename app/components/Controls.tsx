@@ -25,7 +25,7 @@ export default function Controls({ onClear, messages, summary }: Props) {
         pageWidth - margin * 2 - 20
       )
       const textWidth = textLines.reduce(
-        (w, line) => Math.max(w, doc.getTextWidth(line)),
+        (w: number, line: string) => Math.max(w, doc.getTextWidth(line)),
         0
       )
       const bubbleWidth = textWidth + 6
