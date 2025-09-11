@@ -158,25 +158,25 @@ export default function InterviewPage() {
         <div className="rounded-2xl shadow bg-green-50 text-green-900 border border-green-300 p-6">
           <ReactMarkdown
             components={{
-              h1: ({node, ...props}) => (
+              h1: ({ ...props }) => (
                 <h1
                   className="text-2xl font-bold text-green-800 mb-4 border-b pb-2"
                   {...props}
                 />
               ),
-              h2: ({node, ...props}) => (
+              h2: ({ ...props }) => (
                 <h2
                   className="text-xl font-semibold text-green-700 mt-4 mb-2"
                   {...props}
                 />
               ),
-              ul: ({node, ...props}) => (
+              ul: ({ ...props }) => (
                 <ul className="list-disc list-inside space-y-1" {...props} />
               ),
-              li: ({node, ...props}) => (
+              li: ({ ...props }) => (
                 <li className="leading-snug" {...props} />
               ),
-              p: ({node, ...props}) => (
+              p: ({ ...props }) => (
                 <p className="my-1 leading-relaxed" {...props} />
               ),
             }}
@@ -192,7 +192,7 @@ export default function InterviewPage() {
         }
         disabled={timerState !== "running"}
       />
-      <Controls onClear={handleClear} />
+      <Controls onClear={handleClear} messages={messages} summary={summary} />
     </main>
   )
 }

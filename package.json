@@ -14,7 +14,8 @@
     "openai": "^5.20.1",
     "react": "19.1.0",
     "react-dom": "19.1.0",
-    "react-markdown": "^10.1.0"
+    "react-markdown": "^10.1.0",
+    "jspdf": "^2.5.1"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
