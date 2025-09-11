@@ -16,6 +16,14 @@ export default function InterviewPage() {
   const [summaryLoading, setSummaryLoading] = useState(false)
   const [summary, setSummary] = useState<string | null>(null)
 
+  const speak = (text: string) => {
+    if (typeof window === "undefined" || !text) return
+    const utter = new SpeechSynthesisUtterance(text)
+    utter.lang = "fr-FR"
+    window.speechSynthesis.cancel()
+    window.speechSynthesis.speak(utter)
+  }
+
   const handleSend = async (msg: Message) => {
     if (timerState !== "running") return
 
@@ -56,11 +64,13 @@ export default function InterviewPage() {
       const reader = res.body.getReader()
       const decoder = new TextDecoder()
       let done = false
+      let fullText = ""
 
       while (!done) {
         const { value, done: readerDone } = await reader.read()
         if (value) {
           const chunk = decoder.decode(value, { stream: true })
+          fullText += chunk
           setMessages(prev =>
             prev.map(m =>
               m.id === assistantId
@@ -71,6 +81,7 @@ export default function InterviewPage() {
         }
         done = readerDone
       }
+      speak(fullText)
     } catch {
       setMessages(prev =>
         prev.map(m =>
