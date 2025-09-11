@@ -19,6 +19,17 @@ export async function POST(req: Request) {
       )
     }
 
+    const userOnlyTranscript = transcript.filter(
+      (msg: { role: string }) => msg.role === "user"
+    )
+
+    if (!userOnlyTranscript.length) {
+      return new Response(
+        JSON.stringify({ summary: "⚠️ Aucune intervention utilisateur à analyser." }),
+        { headers: { "Content-Type": "application/json" } }
+      )
+    }
+
     const privacyPrompt =
       "Ne fais aucune référence à des informations concernant le propriétaire du compte ChatGPT ou son identité. Base ton analyse uniquement sur la transcription fournie."
 
