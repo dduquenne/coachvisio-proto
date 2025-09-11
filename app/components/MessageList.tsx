@@ -1,11 +1,10 @@
 "use client"
 
 import { useEffect, useRef, ReactNode } from "react"
-import { AlertTriangle } from "lucide-react"
 
 export type Message = {
   id: string
-  role: "user" | "assistant" | "error" | "summary"
+  role: "user" | "assistant" | "error"
   content: string
 }
 
@@ -24,7 +23,7 @@ export default function MessageList({ messages }: Props) {
     <div className="flex flex-col gap-3 h-[50vh] overflow-y-auto p-4 rounded-2xl shadow bg-white">
       {messages.map(msg => {
         let bubbleStyle = ""
-        let content: ReactNode = msg.content   // ✅ ReactNode au lieu de JSX
+        let content: ReactNode = msg.content
 
         if (msg.role === "user") {
           bubbleStyle = "bg-blue-500 text-white self-end"
@@ -35,16 +34,8 @@ export default function MessageList({ messages }: Props) {
           }
         } else if (msg.role === "error") {
           bubbleStyle =
-            "bg-red-100 text-red-700 border border-red-400 self-start flex items-center gap-2"
-          content = (
-            <>
-              <AlertTriangle className="w-4 h-4 text-red-600 shrink-0" />
-              <span>{msg.content}</span>
-            </>
-          )
-        } else if (msg.role === "summary") {
-          bubbleStyle =
-            "bg-green-100 text-green-800 border border-green-400 self-start whitespace-pre-line"
+            "bg-red-100 text-red-700 border border-red-400 self-start"
+          content = `⚠️ ${msg.content}`
         }
 
         return (

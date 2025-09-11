@@ -6,15 +6,18 @@ import MessageList, { Message } from "@/app/components/MessageList"
 import Composer from "@/app/components/Composer"
 import Controls from "@/app/components/Controls"
 import { useState } from "react"
+import ReactMarkdown from "react-markdown"
 
 export default function InterviewPage() {
   const [messages, setMessages] = useState<Message[]>([])
   const [persona, setPersona] = useState("manager")
   const [timerState, setTimerState] = useState<"idle" | "running" | "finished">("idle")
-  const [summaryGenerated, setSummaryGenerated] = useState(false) // ✅ verrou
+  const [summaryGenerated, setSummaryGenerated] = useState(false)
+  const [summaryLoading, setSummaryLoading] = useState(false)
+  const [summary, setSummary] = useState<string | null>(null)
 
   const handleSend = async (msg: Message) => {
-    if (timerState !== "running") return // 🔒 bloque hors chrono
+    if (timerState !== "running") return
 
     const baseId = Date.now().toString()
     const userId = baseId + "-u"
@@ -83,10 +86,10 @@ export default function InterviewPage() {
     }
   }
 
-  // ✅ Génération de synthèse automatique avec verrou
+  // ✅ Génération de synthèse automatique
   const generateSummary = async () => {
-    if (summaryGenerated) return
-    setSummaryGenerated(true)
+    if (summaryGenerated || summaryLoading) return
+    setSummaryLoading(true)
 
     try {
       const res = await fetch("/api/chat-summary", {
@@ -97,14 +100,8 @@ export default function InterviewPage() {
 
       if (res.ok) {
         const data = await res.json()
-        setMessages(prev => [
-          ...prev,
-          {
-            id: Date.now().toString(),
-            role: "summary" as const,
-            content: data.summary,
-          },
-        ])
+        setSummary(data.summary)
+        setSummaryGenerated(true)
       } else {
         setMessages(prev => [
           ...prev,
@@ -124,13 +121,17 @@ export default function InterviewPage() {
           content: `[Erreur réseau] Impossible de générer la synthèse.`,
         },
       ])
+    } finally {
+      setSummaryLoading(false)
     }
   }
 
   const handleClear = () => {
     setMessages([])
     setTimerState("idle")
-    setSummaryGenerated(false) // ✅ reset du verrou
+    setSummaryGenerated(false)
+    setSummaryLoading(false)
+    setSummary(null)
   }
 
   return (
@@ -146,6 +147,45 @@ export default function InterviewPage() {
         }}
       />
       <MessageList messages={messages} />
+
+      {summaryLoading && (
+        <div className="rounded-2xl shadow bg-yellow-100 text-yellow-800 p-4">
+          ⏳ Analyse de la conversation en cours…
+        </div>
+      )}
+
+      {summary && (
+        <div className="rounded-2xl shadow bg-green-50 text-green-900 border border-green-300 p-6">
+          <ReactMarkdown
+            components={{
+              h1: ({node, ...props}) => (
+                <h1
+                  className="text-2xl font-bold text-green-800 mb-4 border-b pb-2"
+                  {...props}
+                />
+              ),
+              h2: ({node, ...props}) => (
+                <h2
+                  className="text-xl font-semibold text-green-700 mt-4 mb-2"
+                  {...props}
+                />
+              ),
+              ul: ({node, ...props}) => (
+                <ul className="list-disc list-inside space-y-1" {...props} />
+              ),
+              li: ({node, ...props}) => (
+                <li className="leading-snug" {...props} />
+              ),
+              p: ({node, ...props}) => (
+                <p className="my-1 leading-relaxed" {...props} />
+              ),
+            }}
+          >
+            {summary}
+          </ReactMarkdown>
+        </div>
+      )}
+
       <Composer
         onSend={msg =>
           handleSend({ ...msg, id: "", role: "user", content: msg.content })

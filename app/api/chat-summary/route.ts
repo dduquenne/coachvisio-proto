@@ -1,4 +1,3 @@
-// app/api/chat-summary/route.ts
 import OpenAI from "openai"
 
 const client = new OpenAI({
@@ -19,17 +18,21 @@ export async function POST(req: Request) {
       messages: [
         {
           role: "system",
-          content: `Tu es un évaluateur bienveillant d'entretien simulé. 
-Fais une synthèse claire et structurée en français, au format suivant :
+          content: `Tu es un évaluateur professionnel d'entretien simulé.
+Rédige un rapport clair et concis en français, au format Markdown, avec la structure suivante :
 
-### Forces observées
+# Rapport de simulation d’entretien
+
+## Forces observées
 - …
 
-### Axes d’amélioration
+## Axes d’amélioration
 - …
 
-### Recommandations concrètes
-- …`,
+## Recommandations concrètes
+- …
+
+Sois bienveillant, précis et orienté action.`,
         },
         {
           role: "user",
@@ -57,5 +60,5 @@ Fais une synthèse claire et structurée en français, au format suivant :
       JSON.stringify({ summary: "⚠️ Erreur côté serveur : " + msg }),
       { status: 500, headers: { "Content-Type": "application/json" } }
     )
-  }  
+  }
 }
