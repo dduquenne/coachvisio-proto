@@ -36,6 +36,8 @@ export async function POST(req: Request) {
   const persona = (body.persona || "manager").toLowerCase()
   const lastUserMessage = (body.lastUserMessage || "").trim()
   const systemPrompt = PERSONA_PROMPTS[persona] ?? PERSONA_PROMPTS.manager
+  const privacyPrompt =
+    "Ne fais aucune référence à des informations concernant le propriétaire du compte ChatGPT ou son identité. Réponds uniquement sur la base des messages fournis dans cette conversation."
 
   if (!lastUserMessage) {
     return new Response("Message utilisateur manquant.", { status: 400 })
@@ -48,6 +50,7 @@ export async function POST(req: Request) {
       temperature: 0.6,
       messages: [
         { role: "system", content: systemPrompt },
+        { role: "system", content: privacyPrompt },
         {
           role: "user",
           content:
