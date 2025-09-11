@@ -50,11 +50,12 @@ Fais une synthèse claire et structurée en français, au format suivant :
     return new Response(JSON.stringify({ summary }), {
       headers: { "Content-Type": "application/json" },
     })
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("Erreur génération synthèse:", err)
+    const msg = err instanceof Error ? err.message : "Erreur inconnue"
     return new Response(
-      JSON.stringify({ summary: "⚠️ Erreur côté serveur : " + err.message }),
+      JSON.stringify({ summary: "⚠️ Erreur côté serveur : " + msg }),
       { status: 500, headers: { "Content-Type": "application/json" } }
     )
-  }
+  }  
 }

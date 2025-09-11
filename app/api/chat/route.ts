@@ -81,9 +81,8 @@ export async function POST(req: Request) {
         "Cache-Control": "no-cache",
       },
     })
-  } catch (e: any) {
-    // Erreurs API (ex: 401, quota, etc.)
-    const msg = e?.message || "Échec de génération."
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : "Échec de génération."
     return new Response(`Erreur côté modèle: ${msg}`, { status: 500 })
-  }
+  }  
 }
