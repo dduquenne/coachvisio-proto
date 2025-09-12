@@ -1,6 +1,6 @@
 "use client"
 
-import { useRef, useState, useEffect } from "react"
+import { useRef, useState, useEffect, useCallback } from "react"
 import type { Message } from "./MessageList"
 
 type Props = {
@@ -12,9 +12,11 @@ type Props = {
 export default function Composer({ onSend, onSilence, disabled }: Props) {
   const [text, setText] = useState("")
   const [voiceMode, setVoiceMode] = useState(false)
+  const voiceModeRef = useRef(false)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const recognitionRef = useRef<any>(null)
   const silenceTimerRef = useRef<NodeJS.Timeout | null>(null)
+  const wasVoiceModeRef = useRef(false)
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -30,6 +32,10 @@ export default function Composer({ onSend, onSilence, disabled }: Props) {
     }
   }, [])
 
+  useEffect(() => {
+    voiceModeRef.current = voiceMode
+  }, [voiceMode])
+
   const handleSend = () => {
     if (!text.trim() || disabled) return
     onSend({
@@ -40,17 +46,17 @@ export default function Composer({ onSend, onSilence, disabled }: Props) {
     setText("")
   }
 
-  const resetSilenceTimer = () => {
-    if (!voiceMode) return
+  const resetSilenceTimer = useCallback(() => {
+    if (!voiceModeRef.current) return
     if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current)
     silenceTimerRef.current = setTimeout(() => {
       onSilence()
       resetSilenceTimer()
     }, 10000)
-  }
+  }, [onSilence])
 
-  const startVoiceMode = () => {
-    if (voiceMode || disabled) return
+  const startVoiceMode = useCallback(() => {
+    if (voiceModeRef.current || disabled) return
     const SpeechRecognition =
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (window as any).SpeechRecognition ||
@@ -78,7 +84,7 @@ export default function Composer({ onSend, onSilence, disabled }: Props) {
       setVoiceMode(false)
     }
     recognition.onend = () => {
-      if (voiceMode) {
+      if (voiceModeRef.current) {
         recognition.start()
       } else {
         setVoiceMode(false)
@@ -88,13 +94,35 @@ export default function Composer({ onSend, onSilence, disabled }: Props) {
     recognition.start()
     setVoiceMode(true)
     resetSilenceTimer()
-  }
+  }, [disabled, onSend, resetSilenceTimer])
 
-  const stopVoiceMode = () => {
+  const stopVoiceMode = useCallback(() => {
     setVoiceMode(false)
     if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current)
     recognitionRef.current?.stop()
-  }
+  }, [])
+
+  useEffect(() => {
+    const handleSpeakingStart = () => {
+      if (voiceModeRef.current) {
+        wasVoiceModeRef.current = true
+        recognitionRef.current?.stop()
+        setVoiceMode(false)
+      }
+    }
+    const handleSpeakingEnd = () => {
+      if (wasVoiceModeRef.current) {
+        wasVoiceModeRef.current = false
+        startVoiceMode()
+      }
+    }
+    window.addEventListener("assistant-speaking-start", handleSpeakingStart)
+    window.addEventListener("assistant-speaking-end", handleSpeakingEnd)
+    return () => {
+      window.removeEventListener("assistant-speaking-start", handleSpeakingStart)
+      window.removeEventListener("assistant-speaking-end", handleSpeakingEnd)
+    }
+  }, [startVoiceMode])
 
   return (
     <div className="flex flex-col gap-2 p-3 rounded-2xl shadow bg-gray-50">
