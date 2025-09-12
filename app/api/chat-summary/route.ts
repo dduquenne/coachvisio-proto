@@ -40,7 +40,7 @@ export async function POST(req: Request) {
         { role: "system", content: privacyPrompt },
         {
           role: "system",
-          content: `Tu es un évaluateur professionnel d'entretien simulé.
+          content: `Tu es un évaluateur professionnel d'entretien simulé. Évalue uniquement la qualité des interventions de l'utilisateur face à l'assistant, sans juger les réponses de l'assistant.
 Rédige un rapport clair et concis en français, au format Markdown, avec la structure suivante :
 
 # Rapport de simulation d’entretien
@@ -58,7 +58,7 @@ Sois bienveillant, précis et orienté action.`,
         },
         {
           role: "user",
-          content: JSON.stringify(transcript),
+          content: JSON.stringify(userOnlyTranscript),
         },
       ],
     })
