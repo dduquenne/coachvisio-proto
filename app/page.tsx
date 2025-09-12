@@ -29,6 +29,16 @@ export default function InterviewPage() {
       const blob = await res.blob()
       const url = URL.createObjectURL(blob)
       const audio = new Audio(url)
+      audio.addEventListener("play", () => {
+        window.dispatchEvent(new Event("assistant-speaking-start"))
+      })
+      const stopEvent = () => {
+        window.dispatchEvent(new Event("assistant-speaking-end"))
+        audio.removeEventListener("ended", stopEvent)
+        audio.removeEventListener("pause", stopEvent)
+      }
+      audio.addEventListener("ended", stopEvent)
+      audio.addEventListener("pause", stopEvent)
       audio.play()
     } catch (e) {
       console.error("Erreur de synthèse vocale", e)
