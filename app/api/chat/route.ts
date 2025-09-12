@@ -1,5 +1,6 @@
 // app/api/chat/route.ts
 import OpenAI from "openai"
+import { PERSONAS, PersonaId } from "@/app/personas"
 
 export const runtime = "nodejs" // explicite : on reste côté Node
 
@@ -8,17 +9,8 @@ const client = new OpenAI({
 })
 
 type Body = {
-  persona?: "manager" | "coach" | "recadrage" | string
+  persona?: PersonaId | string
   lastUserMessage?: string
-}
-
-const PERSONA_PROMPTS: Record<string, string> = {
-  manager:
-    "Tu es un manager exigeant, très factuel et orienté résultats. Tu vas droit au but, tu demandes des indicateurs, des échéances et des engagements. Style: concis, challengeant, professionnel. Une ou deux questions maximum par réponse.",
-  coach:
-    "Tu es un coach bienveillant. Tu reformules brièvement, tu poses des questions ouvertes, tu aides à clarifier les objectifs et les émotions. Style: empathique, constructif, 2 à 4 phrases courtes, une question de relance.",
-  recadrage:
-    "Tu es un manager qui recadre fermement. Tu es direct, précis, et demandes un engagement clair, des conséquences et un plan d'action immédiat. Style: assertif, sans agressivité, 2 à 3 phrases, termine par une exigence concrète.",
 }
 
 export async function POST(req: Request) {
@@ -33,9 +25,9 @@ export async function POST(req: Request) {
     return new Response("Corps de requête invalide (JSON).", { status: 400 })
   }
 
-  const persona = (body.persona || "manager").toLowerCase()
+  const persona = (body.persona || "manager").toLowerCase() as PersonaId
   const lastUserMessage = (body.lastUserMessage || "").trim()
-  const systemPrompt = PERSONA_PROMPTS[persona] ?? PERSONA_PROMPTS.manager
+  const systemPrompt = PERSONAS[persona]?.prompt ?? PERSONAS.manager.prompt
   const privacyPrompt =
     "Ne fais aucune référence à des informations concernant le propriétaire du compte ChatGPT ou son identité. Réponds uniquement sur la base des messages fournis dans cette conversation."
 

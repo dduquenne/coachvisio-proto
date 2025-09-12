@@ -7,22 +7,23 @@ import Composer from "@/app/components/Composer"
 import Controls from "@/app/components/Controls"
 import { useState } from "react"
 import ReactMarkdown from "react-markdown"
+import { PERSONAS, PersonaId } from "@/app/personas"
 
 export default function InterviewPage() {
   const [messages, setMessages] = useState<Message[]>([])
-  const [persona, setPersona] = useState("manager")
+  const [persona, setPersona] = useState<PersonaId>("manager")
   const [timerState, setTimerState] = useState<"idle" | "running" | "finished">("idle")
   const [summaryGenerated, setSummaryGenerated] = useState(false)
   const [summaryLoading, setSummaryLoading] = useState(false)
   const [summary, setSummary] = useState<string | null>(null)
 
-  const speak = async (text: string) => {
+  const speak = async (text: string, personaId: PersonaId) => {
     if (typeof window === "undefined" || !text) return
     try {
       const res = await fetch("/api/speech", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text }),
+        body: JSON.stringify({ text, voice: PERSONAS[personaId].voice }),
       })
       if (!res.ok) return
       const blob = await res.blob()
@@ -91,7 +92,7 @@ export default function InterviewPage() {
         }
         done = readerDone
       }
-      await speak(fullText)
+      await speak(fullText, persona)
     } catch {
       setMessages(prev =>
         prev.map(m =>
