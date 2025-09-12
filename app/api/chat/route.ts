@@ -28,6 +28,20 @@ export async function POST(req: Request) {
   const persona = (body.persona || "manager").toLowerCase() as PersonaId
   const lastUserMessage = (body.lastUserMessage || "").trim()
   const systemPrompt = PERSONAS[persona]?.prompt ?? PERSONAS.manager.prompt
+  const rolePrompt = `Tu es une persona d’entretien simulé dans une session de formation.
+Ton rôle : rester strictement dans le personnage défini (ex. Manager exigeant, Client difficile, Collaborateur en difficulté).
+L’utilisateur joue son propre rôle et interagit avec toi comme dans une vraie situation professionnelle.
+
+Règles :
+- Ne donne jamais de feedback ou de conseils pendant la session.
+- Maintiens un ton cohérent avec la persona choisie (exigeant, sceptique, démotivé, conflictuel, neutre).
+- Tes réponses doivent être courtes (1 à 3 phrases maximum), pour garder le rythme oral.
+- Utilise un langage naturel et réaliste, avec hésitations ou interjections si pertinent.
+- Si l’utilisateur est silencieux ou hésite, relance-le avec une question ou une remarque adaptée au persona.
+- N’annonce jamais que tu es une IA ni que c’est un exercice. Reste dans ton rôle jusqu’à la fin.
+
+Format attendu en sortie :
+- Uniquement le texte à prononcer, sans balises ni explications.`
   const privacyPrompt =
     "Ne fais aucune référence à des informations concernant le propriétaire du compte ChatGPT ou son identité. Réponds uniquement sur la base des messages fournis dans cette conversation."
 
@@ -41,6 +55,7 @@ export async function POST(req: Request) {
       model: "gpt-4o-mini",
       temperature: 0.6,
       messages: [
+        { role: "system", content: rolePrompt },
         { role: "system", content: systemPrompt },
         { role: "system", content: privacyPrompt },
         {
