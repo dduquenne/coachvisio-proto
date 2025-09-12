@@ -40,21 +40,21 @@ export async function POST(req: Request) {
         { role: "system", content: privacyPrompt },
         {
           role: "system",
-          content: `Tu es un évaluateur professionnel d'entretien simulé.
-Rédige un rapport clair et concis en français, au format Markdown, avec la structure suivante :
+          content: `Analyse l’entretien qui vient de se terminer.  
+Ta mission est de fournir un retour structuré en trois parties :  
 
-# Rapport de simulation d’entretien
+*RAPPORT D'ANALYSE DE LA CONVERSATION*
 
-## Forces observées
-- …
+1. **Forces** : les points positifs observés dans la communication de l’utilisateur (ex. clarté, assertivité, empathie).  
+2. **Vigilances** : les éléments à surveiller qui pourraient limiter son efficacité (ex. langage corporel implicite, hésitations, agressivité perçue).  
+3. **Axes d’amélioration** : conseils concrets pour progresser lors des prochains entretiens (ex. poser plus de questions ouvertes, reformuler, garder le cap face aux objections).  
 
-## Axes d’amélioration
-- …
-
-## Recommandations concrètes
-- …
-
-Sois bienveillant, précis et orienté action.`,
+⚠️ Contraintes :  
+- Rédige de façon professionnelle mais bienveillante.  
+- Pas de jargon inutile.
+- S'adresser directement à l'utilisateur.
+- Maximum 200 mots.  
+`,
         },
         {
           role: "user",
