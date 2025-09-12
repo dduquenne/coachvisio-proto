@@ -11,7 +11,7 @@ type Props = {
 
 export default function Controls({ onClear, messages, summary }: Props) {
   const handleDownload = () => {
-    if (!summary) return
+    if (!summary || messages.length === 0) return
     const doc = new jsPDF()
     const pageWidth = doc.internal.pageSize.getWidth()
     const pageHeight = doc.internal.pageSize.getHeight()
@@ -116,7 +116,7 @@ export default function Controls({ onClear, messages, summary }: Props) {
       >
         Effacer la conversation
       </button>
-      {summary && (
+      {summary && messages.length > 0 && (
         <button
           onClick={handleDownload}
           className="rounded-2xl bg-blue-600 px-4 py-2 text-white shadow hover:bg-blue-700"
