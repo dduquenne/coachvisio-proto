@@ -80,8 +80,13 @@ export default function Composer({ onSend, onSilence, disabled }: Props) {
       })
       if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current)
     }
-    recognition.onerror = () => {
-      setVoiceMode(false)
+    recognition.onerror = event => {
+      if (event.error === "no-speech") {
+        setTimeout(() => recognition.start(), 100)
+        resetSilenceTimer()
+      } else {
+        setVoiceMode(false)
+      }
     }
     recognition.onend = () => {
       if (voiceModeRef.current) {
