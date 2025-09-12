@@ -31,11 +31,6 @@ export default function InterviewPage() {
       const blob = await res.blob()
       const url = URL.createObjectURL(blob)
       const audio = new Audio(url)
-      const audioContext = new AudioContext()
-      const analyser = audioContext.createAnalyser()
-      const source = audioContext.createMediaElementSource(audio)
-      source.connect(analyser)
-      analyser.connect(audioContext.destination)
       audio.addEventListener("play", () => {
         window.dispatchEvent(new Event("assistant-speaking-start"))
       })
