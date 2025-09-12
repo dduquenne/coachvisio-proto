@@ -78,7 +78,7 @@ export default function Composer({ onSend, onSilence, disabled }: Props) {
         role: "user",
         content: transcript,
       })
-      if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current)
+      resetSilenceTimer()
     }
     recognition.onerror = event => {
       if (event.error === "no-speech") {
