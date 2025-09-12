@@ -16,12 +16,22 @@ export default function InterviewPage() {
   const [summaryLoading, setSummaryLoading] = useState(false)
   const [summary, setSummary] = useState<string | null>(null)
 
-  const speak = (text: string) => {
+  const speak = async (text: string) => {
     if (typeof window === "undefined" || !text) return
-    const utter = new SpeechSynthesisUtterance(text)
-    utter.lang = "fr-FR"
-    window.speechSynthesis.cancel()
-    window.speechSynthesis.speak(utter)
+    try {
+      const res = await fetch("/api/speech", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text }),
+      })
+      if (!res.ok) return
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const audio = new Audio(url)
+      audio.play()
+    } catch (e) {
+      console.error("Erreur de synthèse vocale", e)
+    }
   }
 
   const handleSend = async (msg: Message) => {
@@ -81,7 +91,7 @@ export default function InterviewPage() {
         }
         done = readerDone
       }
-      speak(fullText)
+      await speak(fullText)
     } catch {
       setMessages(prev =>
         prev.map(m =>
