@@ -103,6 +103,12 @@ export default function Composer({ onSend, onSilence, disabled }: Props) {
   }, [])
 
   useEffect(() => {
+    if (disabled && voiceModeRef.current) {
+      stopVoiceMode()
+    }
+  }, [disabled, stopVoiceMode])
+
+  useEffect(() => {
     const handleSpeakingStart = () => {
       if (voiceModeRef.current) {
         if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current)
