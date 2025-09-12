@@ -5,7 +5,8 @@ import Timer from "@/app/components/Timer"
 import MessageList, { Message } from "@/app/components/MessageList"
 import Composer from "@/app/components/Composer"
 import Controls from "@/app/components/Controls"
-import { useState } from "react"
+import Avatar, { AvatarHandle } from "@/app/components/Avatar"
+import { useState, useRef } from "react"
 import ReactMarkdown from "react-markdown"
 import { PERSONAS, PersonaId } from "@/app/personas"
 
@@ -16,6 +17,7 @@ export default function InterviewPage() {
   const [summaryGenerated, setSummaryGenerated] = useState(false)
   const [summaryLoading, setSummaryLoading] = useState(false)
   const [summary, setSummary] = useState<string | null>(null)
+  const avatarRef = useRef<AvatarHandle>(null)
 
   const speak = async (text: string, personaId: PersonaId) => {
     if (typeof window === "undefined" || !text) return
@@ -29,6 +31,11 @@ export default function InterviewPage() {
       const blob = await res.blob()
       const url = URL.createObjectURL(blob)
       const audio = new Audio(url)
+      const audioContext = new AudioContext()
+      const analyser = audioContext.createAnalyser()
+      const source = audioContext.createMediaElementSource(audio)
+      source.connect(analyser)
+      analyser.connect(audioContext.destination)
       audio.addEventListener("play", () => {
         window.dispatchEvent(new Event("assistant-speaking-start"))
       })
@@ -39,6 +46,7 @@ export default function InterviewPage() {
       }
       audio.addEventListener("ended", stopEvent)
       audio.addEventListener("pause", stopEvent)
+      avatarRef.current?.attachAudioAnalyser(audio)
       audio.play()
     } catch (e) {
       console.error("Erreur de synthèse vocale", e)
@@ -241,6 +249,9 @@ export default function InterviewPage() {
   return (
     <main className="flex flex-col gap-4 max-w-3xl mx-auto p-6">
       <h1 className="text-2xl font-bold">Simulation d’entretien</h1>
+      <div className="w-full h-64">
+        <Avatar ref={avatarRef} />
+      </div>
       <PersonaSelect value={persona} onChange={setPersona} />
       <Timer
         onStateChange={(state) => {
