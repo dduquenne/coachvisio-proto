@@ -5,14 +5,16 @@ import type { Message } from "./MessageList"
 
 type Props = {
   onSend: (msg: Message) => void
+  onSilence: () => void
   disabled?: boolean
 }
 
-export default function Composer({ onSend, disabled }: Props) {
+export default function Composer({ onSend, onSilence, disabled }: Props) {
   const [text, setText] = useState("")
-  const [recording, setRecording] = useState(false)
+  const [voiceMode, setVoiceMode] = useState(false)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const recognitionRef = useRef<any>(null)
+  const silenceTimerRef = useRef<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -38,8 +40,17 @@ export default function Composer({ onSend, disabled }: Props) {
     setText("")
   }
 
-  const startRecording = () => {
-    if (recording || disabled) return
+  const resetSilenceTimer = () => {
+    if (!voiceMode) return
+    if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current)
+    silenceTimerRef.current = setTimeout(() => {
+      onSilence()
+      resetSilenceTimer()
+    }, 10000)
+  }
+
+  const startVoiceMode = () => {
+    if (voiceMode || disabled) return
     const SpeechRecognition =
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (window as any).SpeechRecognition ||
@@ -51,27 +62,37 @@ export default function Composer({ onSend, disabled }: Props) {
     }
     const recognition: SpeechRecognition = new SpeechRecognition()
     recognition.lang = "fr-FR"
+    recognition.continuous = true
     recognition.interimResults = false
     recognition.onresult = e => {
-      const transcript = e.results[0][0].transcript
+      const result = e.results[e.results.length - 1]
+      const transcript = result[0].transcript
       onSend({
         id: Date.now().toString(),
         role: "user",
         content: transcript,
       })
+      resetSilenceTimer()
     }
     recognition.onerror = () => {
-      setRecording(false)
+      setVoiceMode(false)
     }
     recognition.onend = () => {
-      setRecording(false)
+      if (voiceMode) {
+        recognition.start()
+      } else {
+        setVoiceMode(false)
+      }
     }
     recognitionRef.current = recognition
     recognition.start()
-    setRecording(true)
+    setVoiceMode(true)
+    resetSilenceTimer()
   }
 
-  const stopRecording = () => {
+  const stopVoiceMode = () => {
+    setVoiceMode(false)
+    if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current)
     recognitionRef.current?.stop()
   }
 
@@ -95,11 +116,13 @@ export default function Composer({ onSend, disabled }: Props) {
           className="flex-1 rounded border px-3 py-2 disabled:bg-gray-100"
         />
         <button
-          onClick={recording ? stopRecording : startRecording}
+          onClick={voiceMode ? stopVoiceMode : startVoiceMode}
           disabled={disabled}
-          className="rounded-full bg-gray-200 p-2 text-gray-800 shadow disabled:opacity-50"
+          className={`rounded-full p-2 text-gray-800 shadow disabled:opacity-50 ${
+            voiceMode ? "bg-red-200" : "bg-gray-200"
+          }`}
         >
-          {recording ? "⏹️" : "🎤"}
+          {voiceMode ? "⏹️" : "🎤"}
         </button>
         <button
           onClick={handleSend}

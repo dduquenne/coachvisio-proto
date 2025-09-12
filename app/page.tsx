@@ -108,6 +108,78 @@ export default function InterviewPage() {
     }
   }
 
+  const handleSilence = async () => {
+    if (timerState !== "running") return
+
+    const baseId = Date.now().toString()
+    const assistantId = baseId + "-a"
+
+    setMessages(prev => [
+      ...prev,
+      { id: assistantId, role: "assistant" as const, content: "" },
+    ])
+
+    try {
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          persona,
+          lastUserMessage: "L'utilisateur reste silencieux depuis 10 secondes.",
+        }),
+      })
+
+      if (!res.ok || !res.body) {
+        setMessages(prev =>
+          prev.map(m =>
+            m.id === assistantId
+              ? {
+                  ...m,
+                  role: "error" as const,
+                  content: `[Erreur ${res.status}] Impossible de générer la réponse.`,
+                }
+              : m
+          )
+        )
+        return
+      }
+
+      const reader = res.body.getReader()
+      const decoder = new TextDecoder()
+      let done = false
+      let fullText = ""
+
+      while (!done) {
+        const { value, done: readerDone } = await reader.read()
+        if (value) {
+          const chunk = decoder.decode(value, { stream: true })
+          fullText += chunk
+          setMessages(prev =>
+            prev.map(m =>
+              m.id === assistantId
+                ? { ...m, content: m.content + chunk }
+                : m
+            )
+          )
+        }
+        done = readerDone
+      }
+      await speak(fullText, persona)
+    } catch {
+      setMessages(prev =>
+        prev.map(m =>
+          m.id === assistantId
+            ? {
+                ...m,
+                role: "error" as const,
+                content: `[Erreur réseau] Impossible de contacter le serveur.`,
+              }
+            : m
+        )
+      )
+    }
+  }
+
   // ✅ Génération de synthèse automatique
   const generateSummary = async () => {
     if (summaryGenerated || summaryLoading) return
@@ -212,6 +284,7 @@ export default function InterviewPage() {
         onSend={msg =>
           handleSend({ ...msg, id: "", role: "user", content: msg.content })
         }
+        onSilence={handleSilence}
         disabled={timerState !== "running"}
       />
       <Controls onClear={handleClear} messages={messages} summary={summary} />
