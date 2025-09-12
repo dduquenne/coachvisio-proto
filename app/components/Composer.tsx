@@ -78,7 +78,7 @@ export default function Composer({ onSend, onSilence, disabled }: Props) {
         role: "user",
         content: transcript,
       })
-      resetSilenceTimer()
+      if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current)
     }
     recognition.onerror = () => {
       setVoiceMode(false)
@@ -105,6 +105,7 @@ export default function Composer({ onSend, onSilence, disabled }: Props) {
   useEffect(() => {
     const handleSpeakingStart = () => {
       if (voiceModeRef.current) {
+        if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current)
         wasVoiceModeRef.current = true
         recognitionRef.current?.stop()
         setVoiceMode(false)
