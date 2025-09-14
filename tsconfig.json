@@ -18,7 +18,8 @@
     "jsx": "preserve",
     "types": [
       "node",
-      "react"
+      "react",
+      "three"
     ],
     "incremental": true,
     "plugins": [
