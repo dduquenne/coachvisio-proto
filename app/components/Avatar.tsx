@@ -78,9 +78,13 @@ const Avatar = forwardRef<AvatarHandle>((_props, ref) => {
   }
 
   const stop = () => {
-    if (rafRef.current) cancelAnimationFrame(rafRef.current)
-    if (audioRef.current && playHandlerRef.current)
+    if (rafRef.current) {
+      cancelAnimationFrame(rafRef.current)
+      rafRef.current = undefined
+    }
+    if (audioRef.current && playHandlerRef.current) {
       audioRef.current.removeEventListener('play', playHandlerRef.current)
+    }
     if (ctxRef.current) ctxRef.current.close()
     analyserRef.current = null
     dataRef.current = null
@@ -108,16 +112,15 @@ const Avatar = forwardRef<AvatarHandle>((_props, ref) => {
       const source = ctx.createMediaElementSource(audio)
       source.connect(analyser)
       analyser.connect(ctx.destination)
-      const resume = () => {
+      const onPlay = () => {
         void ctx.resume()
+        animate()
       }
-      audio.addEventListener('play', resume)
-      playHandlerRef.current = resume
+      audio.addEventListener('play', onPlay)
+      playHandlerRef.current = onPlay
       audioRef.current = audio
-      if (ctx.state === 'suspended') void ctx.resume()
       analyserRef.current = analyser
       dataRef.current = new Uint8Array(analyser.fftSize)
-      animate()
     }
   }))
 
