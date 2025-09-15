@@ -45,8 +45,10 @@ export default function InterviewPage() {
       audio.addEventListener("pause", stopEvent)
       audio.addEventListener("error", stopEvent)
       audio.addEventListener("abort", stopEvent)
-      avatarRef.current?.attachAudioAnalyser(audio)
-      audio.play()
+      await avatarRef.current?.attachAudioAnalyser(audio)
+      await audio.play().catch(e => {
+        console.error("Erreur lecture audio", e)
+      })
     } catch (e) {
       console.error("Erreur de synthèse vocale", e)
     }
