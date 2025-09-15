@@ -47,6 +47,9 @@ const Avatar = forwardRef<AvatarHandle>((_props, ref) => {
   const dataRef = useRef<Uint8Array | null>(null)
   const mouthRef = useRef<THREE.Mesh | null>(null)
   const rafRef = useRef<number>()
+  const ctxRef = useRef<AudioContext | null>(null)
+  const audioRef = useRef<HTMLAudioElement | null>(null)
+  const playHandlerRef = useRef<() => void>()
 
   const animate = () => {
     if (
@@ -76,6 +79,14 @@ const Avatar = forwardRef<AvatarHandle>((_props, ref) => {
 
   const stop = () => {
     if (rafRef.current) cancelAnimationFrame(rafRef.current)
+    if (audioRef.current && playHandlerRef.current)
+      audioRef.current.removeEventListener('play', playHandlerRef.current)
+    if (ctxRef.current) ctxRef.current.close()
+    analyserRef.current = null
+    dataRef.current = null
+    ctxRef.current = null
+    audioRef.current = null
+    playHandlerRef.current = undefined
   }
 
   useEffect(() => {
@@ -89,12 +100,21 @@ const Avatar = forwardRef<AvatarHandle>((_props, ref) => {
 
   useImperativeHandle(ref, () => ({
     attachAudioAnalyser(audio: HTMLAudioElement) {
+      stop()
       const ctx = new AudioContext()
+      ctxRef.current = ctx
       const analyser = ctx.createAnalyser()
       analyser.fftSize = 2048
       const source = ctx.createMediaElementSource(audio)
       source.connect(analyser)
       analyser.connect(ctx.destination)
+      const resume = () => {
+        void ctx.resume()
+      }
+      audio.addEventListener('play', resume)
+      playHandlerRef.current = resume
+      audioRef.current = audio
+      if (ctx.state === 'suspended') void ctx.resume()
       analyserRef.current = analyser
       dataRef.current = new Uint8Array(analyser.fftSize)
       animate()
