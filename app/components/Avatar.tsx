@@ -1,6 +1,12 @@
 'use client'
 
-import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react'
+import {
+  forwardRef,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  type MutableRefObject,
+} from 'react'
 import { Canvas, useLoader } from '@react-three/fiber'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import * as THREE from 'three'
@@ -9,8 +15,24 @@ export interface AvatarHandle {
   attachAudioAnalyser(audio: HTMLAudioElement): void
 }
 
-function AvatarModel() {
+function AvatarModel({
+  mouthRef,
+}: {
+  mouthRef: MutableRefObject<THREE.Object3D | null>
+}) {
   const gltf = useLoader(GLTFLoader, '/avatar.glb')
+
+  useEffect(() => {
+    gltf.scene.traverse(child => {
+      const mesh = child as THREE.Mesh & {
+        morphTargetDictionary?: Record<string, number>
+      }
+      if (mesh.morphTargetDictionary?.mouthOpen !== undefined) {
+        mouthRef.current = mesh
+      }
+    })
+  }, [gltf, mouthRef])
+
   return (
     <primitive
       object={gltf.scene}
@@ -25,16 +47,6 @@ const Avatar = forwardRef<AvatarHandle>((_props, ref) => {
   const dataRef = useRef<Uint8Array | null>(null)
   const mouthRef = useRef<THREE.Object3D | null>(null)
   const rafRef = useRef<number>()
-
-  useEffect(() => {
-    // store reference to first mesh as mouth
-    const load = async () => {
-      const loader = new GLTFLoader()
-      const gltf = await loader.loadAsync('/avatar.glb')
-      mouthRef.current = gltf.scene
-    }
-    load()
-  }, [])
 
   const animate = () => {
     if (analyserRef.current && dataRef.current && mouthRef.current) {
@@ -73,15 +85,7 @@ const Avatar = forwardRef<AvatarHandle>((_props, ref) => {
       analyser.connect(ctx.destination)
       analyserRef.current = analyser
       dataRef.current = new Uint8Array(analyser.fftSize)
-      if (!mouthRef.current) {
-        const loader = new GLTFLoader()
-        loader.load('/avatar.glb', gltf => {
-          mouthRef.current = gltf.scene
-          animate()
-        })
-      } else {
-        animate()
-      }
+      animate()
     }
   }))
 
@@ -92,7 +96,7 @@ const Avatar = forwardRef<AvatarHandle>((_props, ref) => {
     >
       <ambientLight />
       <pointLight position={[10, 10, 10]} />
-      <AvatarModel />
+      <AvatarModel mouthRef={mouthRef} />
     </Canvas>
   )
 })
