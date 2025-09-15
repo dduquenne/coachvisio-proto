@@ -47,6 +47,9 @@ const Avatar = forwardRef<AvatarHandle>((_props, ref) => {
   const dataRef = useRef<Uint8Array | null>(null)
   const mouthRef = useRef<THREE.Mesh | null>(null)
   const rafRef = useRef<number>()
+  const ctxRef = useRef<AudioContext | null>(null)
+  const audioRef = useRef<HTMLAudioElement | null>(null)
+  const playHandlerRef = useRef<() => void>()
 
   const animate = () => {
     if (
@@ -57,17 +60,21 @@ const Avatar = forwardRef<AvatarHandle>((_props, ref) => {
       mouthRef.current.morphTargetInfluences
     ) {
       analyserRef.current.getByteTimeDomainData(dataRef.current)
+      const data = dataRef.current
       let sum = 0
-      for (let i = 0; i < dataRef.current.length; i++) {
-        sum += Math.abs(dataRef.current[i] - 128)
+      for (let i = 0; i < data.length; i++) {
+        const value = data[i] - 128
+        sum += value * value
       }
-      const amplitude = sum / dataRef.current.length / 128
+      const amplitude = Math.sqrt(sum / data.length) / 128
       const index = mouthRef.current.morphTargetDictionary.mouthOpen
       if (index !== undefined) {
-        mouthRef.current.morphTargetInfluences[index] = THREE.MathUtils.clamp(
-          amplitude * 2,
-          0,
-          1,
+        const target = THREE.MathUtils.clamp(amplitude * 3, 0, 1)
+        const current = mouthRef.current.morphTargetInfluences[index] ?? 0
+        mouthRef.current.morphTargetInfluences[index] = THREE.MathUtils.lerp(
+          current,
+          target,
+          0.1,
         )
       }
     }
@@ -75,7 +82,21 @@ const Avatar = forwardRef<AvatarHandle>((_props, ref) => {
   }
 
   const stop = () => {
-    if (rafRef.current) cancelAnimationFrame(rafRef.current)
+    if (rafRef.current) {
+      cancelAnimationFrame(rafRef.current)
+      rafRef.current = undefined
+    }
+    if (audioRef.current && playHandlerRef.current) {
+      audioRef.current.removeEventListener('play', playHandlerRef.current)
+    }
+    if (ctxRef.current) {
+      void ctxRef.current.close()
+    }
+    analyserRef.current = null
+    dataRef.current = null
+    ctxRef.current = null
+    audioRef.current = null
+    playHandlerRef.current = undefined
   }
 
   useEffect(() => {
@@ -89,15 +110,23 @@ const Avatar = forwardRef<AvatarHandle>((_props, ref) => {
 
   useImperativeHandle(ref, () => ({
     attachAudioAnalyser(audio: HTMLAudioElement) {
+      stop()
       const ctx = new AudioContext()
+      ctxRef.current = ctx
       const analyser = ctx.createAnalyser()
       analyser.fftSize = 2048
       const source = ctx.createMediaElementSource(audio)
       source.connect(analyser)
       analyser.connect(ctx.destination)
+      const onPlay = () => {
+        void ctx.resume()
+        animate()
+      }
+      audio.addEventListener('play', onPlay)
+      playHandlerRef.current = onPlay
+      audioRef.current = audio
       analyserRef.current = analyser
       dataRef.current = new Uint8Array(analyser.fftSize)
-      animate()
     }
   }))
 

@@ -38,9 +38,13 @@ export default function InterviewPage() {
         window.dispatchEvent(new Event("assistant-speaking-end"))
         audio.removeEventListener("ended", stopEvent)
         audio.removeEventListener("pause", stopEvent)
+        audio.removeEventListener("error", stopEvent)
+        audio.removeEventListener("abort", stopEvent)
       }
       audio.addEventListener("ended", stopEvent)
       audio.addEventListener("pause", stopEvent)
+      audio.addEventListener("error", stopEvent)
+      audio.addEventListener("abort", stopEvent)
       avatarRef.current?.attachAudioAnalyser(audio)
       audio.play()
     } catch (e) {
