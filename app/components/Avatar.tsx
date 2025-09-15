@@ -60,17 +60,21 @@ const Avatar = forwardRef<AvatarHandle>((_props, ref) => {
       mouthRef.current.morphTargetInfluences
     ) {
       analyserRef.current.getByteTimeDomainData(dataRef.current)
+      const data = dataRef.current
       let sum = 0
-      for (let i = 0; i < dataRef.current.length; i++) {
-        sum += Math.abs(dataRef.current[i] - 128)
+      for (let i = 0; i < data.length; i++) {
+        const value = data[i] - 128
+        sum += value * value
       }
-      const amplitude = sum / dataRef.current.length / 128
+      const amplitude = Math.sqrt(sum / data.length) / 128
       const index = mouthRef.current.morphTargetDictionary.mouthOpen
       if (index !== undefined) {
-        mouthRef.current.morphTargetInfluences[index] = THREE.MathUtils.clamp(
-          amplitude * 2,
-          0,
-          1,
+        const target = THREE.MathUtils.clamp(amplitude * 3, 0, 1)
+        const current = mouthRef.current.morphTargetInfluences[index] ?? 0
+        mouthRef.current.morphTargetInfluences[index] = THREE.MathUtils.lerp(
+          current,
+          target,
+          0.1,
         )
       }
     }
