@@ -12,7 +12,7 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import * as THREE from 'three'
 
 export interface AvatarHandle {
-  attachAudioAnalyser(audio: HTMLAudioElement): void
+  attachAudioAnalyser(audio: HTMLAudioElement): Promise<void>
 }
 
 function AvatarModel({
@@ -48,8 +48,6 @@ const Avatar = forwardRef<AvatarHandle>((_props, ref) => {
   const mouthRef = useRef<THREE.Mesh | null>(null)
   const rafRef = useRef<number>()
   const ctxRef = useRef<AudioContext | null>(null)
-  const audioRef = useRef<HTMLAudioElement | null>(null)
-  const playHandlerRef = useRef<() => void>()
 
   const animate = () => {
     if (
@@ -86,17 +84,12 @@ const Avatar = forwardRef<AvatarHandle>((_props, ref) => {
       cancelAnimationFrame(rafRef.current)
       rafRef.current = undefined
     }
-    if (audioRef.current && playHandlerRef.current) {
-      audioRef.current.removeEventListener('play', playHandlerRef.current)
-    }
     if (ctxRef.current) {
       void ctxRef.current.close()
     }
     analyserRef.current = null
     dataRef.current = null
     ctxRef.current = null
-    audioRef.current = null
-    playHandlerRef.current = undefined
   }
 
   useEffect(() => {
@@ -109,22 +102,22 @@ const Avatar = forwardRef<AvatarHandle>((_props, ref) => {
   }, [])
 
   useImperativeHandle(ref, () => ({
-    attachAudioAnalyser(audio: HTMLAudioElement) {
+    async attachAudioAnalyser(audio: HTMLAudioElement) {
       stop()
-      const ctx = new AudioContext()
+      const AudioCtx =
+        window.AudioContext ||
+        (window as typeof window & {
+          webkitAudioContext: typeof AudioContext
+        }).webkitAudioContext
+      const ctx = new AudioCtx()
       ctxRef.current = ctx
       const analyser = ctx.createAnalyser()
       analyser.fftSize = 2048
       const source = ctx.createMediaElementSource(audio)
       source.connect(analyser)
       analyser.connect(ctx.destination)
-      const onPlay = () => {
-        void ctx.resume()
-        animate()
-      }
-      audio.addEventListener('play', onPlay)
-      playHandlerRef.current = onPlay
-      audioRef.current = audio
+      await ctx.resume()
+      animate()
       analyserRef.current = analyser
       dataRef.current = new Uint8Array(analyser.fftSize)
     }
