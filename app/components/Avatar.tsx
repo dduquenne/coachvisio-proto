@@ -12,7 +12,12 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import * as THREE from 'three'
 
 export interface AvatarHandle {
-  attachAudioAnalyser(audio: HTMLAudioElement): void
+  attachAudioAnalyser(audio: HTMLAudioElement): Promise<void>
+}
+
+interface AvatarProps {
+  /** multiplier applied to mouth-open intensity */
+  gain?: number
 }
 
 function AvatarModel({
@@ -42,14 +47,17 @@ function AvatarModel({
   )
 }
 
-const Avatar = forwardRef<AvatarHandle>((_props, ref) => {
+const VOICE_LOW_HZ = 80
+const VOICE_HIGH_HZ = 1000
+const NOISE_THRESHOLD = 0.05
+
+const Avatar = forwardRef<AvatarHandle, AvatarProps>(({ gain = 3 }, ref) => {
   const analyserRef = useRef<AnalyserNode | null>(null)
   const dataRef = useRef<Uint8Array | null>(null)
+  const bandRef = useRef<{ low: number; high: number } | null>(null)
   const mouthRef = useRef<THREE.Mesh | null>(null)
   const rafRef = useRef<number>()
   const ctxRef = useRef<AudioContext | null>(null)
-  const audioRef = useRef<HTMLAudioElement | null>(null)
-  const playHandlerRef = useRef<() => void>()
 
   const animate = () => {
     if (
@@ -57,19 +65,24 @@ const Avatar = forwardRef<AvatarHandle>((_props, ref) => {
       dataRef.current &&
       mouthRef.current &&
       mouthRef.current.morphTargetDictionary &&
-      mouthRef.current.morphTargetInfluences
+      mouthRef.current.morphTargetInfluences &&
+      bandRef.current
     ) {
-      analyserRef.current.getByteTimeDomainData(dataRef.current)
+      analyserRef.current.getByteFrequencyData(dataRef.current)
       const data = dataRef.current
+      const { low, high } = bandRef.current
       let sum = 0
-      for (let i = 0; i < data.length; i++) {
-        const value = data[i] - 128
-        sum += value * value
+      for (let i = low; i <= high; i++) {
+        sum += data[i]
       }
-      const amplitude = Math.sqrt(sum / data.length) / 128
+      const amplitude = sum / ((high - low + 1) * 255)
+      const normalized =
+        amplitude > NOISE_THRESHOLD
+          ? (amplitude - NOISE_THRESHOLD) / (1 - NOISE_THRESHOLD)
+          : 0
       const index = mouthRef.current.morphTargetDictionary.mouthOpen
       if (index !== undefined) {
-        const target = THREE.MathUtils.clamp(amplitude * 3, 0, 1)
+        const target = THREE.MathUtils.clamp(normalized * gain, 0, 1)
         const current = mouthRef.current.morphTargetInfluences[index] ?? 0
         mouthRef.current.morphTargetInfluences[index] = THREE.MathUtils.lerp(
           current,
@@ -86,17 +99,13 @@ const Avatar = forwardRef<AvatarHandle>((_props, ref) => {
       cancelAnimationFrame(rafRef.current)
       rafRef.current = undefined
     }
-    if (audioRef.current && playHandlerRef.current) {
-      audioRef.current.removeEventListener('play', playHandlerRef.current)
-    }
     if (ctxRef.current) {
       void ctxRef.current.close()
     }
     analyserRef.current = null
     dataRef.current = null
     ctxRef.current = null
-    audioRef.current = null
-    playHandlerRef.current = undefined
+    bandRef.current = null
   }
 
   useEffect(() => {
@@ -109,24 +118,32 @@ const Avatar = forwardRef<AvatarHandle>((_props, ref) => {
   }, [])
 
   useImperativeHandle(ref, () => ({
-    attachAudioAnalyser(audio: HTMLAudioElement) {
+    async attachAudioAnalyser(audio: HTMLAudioElement) {
       stop()
-      const ctx = new AudioContext()
+      const AudioCtx =
+        window.AudioContext ||
+        (window as typeof window & {
+          webkitAudioContext: typeof AudioContext
+        }).webkitAudioContext
+      const ctx = new AudioCtx()
       ctxRef.current = ctx
       const analyser = ctx.createAnalyser()
       analyser.fftSize = 2048
       const source = ctx.createMediaElementSource(audio)
       source.connect(analyser)
       analyser.connect(ctx.destination)
-      const onPlay = () => {
-        void ctx.resume()
-        animate()
-      }
-      audio.addEventListener('play', onPlay)
-      playHandlerRef.current = onPlay
-      audioRef.current = audio
+      await ctx.resume()
+      animate()
       analyserRef.current = analyser
-      dataRef.current = new Uint8Array(analyser.fftSize)
+      dataRef.current = new Uint8Array(analyser.frequencyBinCount)
+      const binSize = ctx.sampleRate / analyser.fftSize
+      bandRef.current = {
+        low: Math.floor(VOICE_LOW_HZ / binSize),
+        high: Math.min(
+          analyser.frequencyBinCount - 1,
+          Math.floor(VOICE_HIGH_HZ / binSize),
+        ),
+      }
     }
   }))
 

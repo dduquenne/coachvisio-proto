@@ -31,22 +31,24 @@ export default function InterviewPage() {
       const blob = await res.blob()
       const url = URL.createObjectURL(blob)
       const audio = new Audio(url)
+      let started = false
       audio.addEventListener("play", () => {
+        started = true
         window.dispatchEvent(new Event("assistant-speaking-start"))
       })
       const stopEvent = () => {
-        window.dispatchEvent(new Event("assistant-speaking-end"))
+        if (started) {
+          window.dispatchEvent(new Event("assistant-speaking-end"))
+        }
         audio.removeEventListener("ended", stopEvent)
-        audio.removeEventListener("pause", stopEvent)
         audio.removeEventListener("error", stopEvent)
-        audio.removeEventListener("abort", stopEvent)
       }
       audio.addEventListener("ended", stopEvent)
-      audio.addEventListener("pause", stopEvent)
       audio.addEventListener("error", stopEvent)
-      audio.addEventListener("abort", stopEvent)
-      avatarRef.current?.attachAudioAnalyser(audio)
-      audio.play()
+      await avatarRef.current?.attachAudioAnalyser(audio)
+      await audio.play().catch(e => {
+        console.error("Erreur lecture audio", e)
+      })
     } catch (e) {
       console.error("Erreur de synthèse vocale", e)
     }
