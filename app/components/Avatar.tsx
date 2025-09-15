@@ -89,7 +89,9 @@ const Avatar = forwardRef<AvatarHandle>((_props, ref) => {
     if (audioRef.current && playHandlerRef.current) {
       audioRef.current.removeEventListener('play', playHandlerRef.current)
     }
-    if (ctxRef.current) ctxRef.current.close()
+    if (ctxRef.current) {
+      void ctxRef.current.close()
+    }
     analyserRef.current = null
     dataRef.current = null
     ctxRef.current = null
