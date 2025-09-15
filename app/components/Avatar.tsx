@@ -11,7 +11,13 @@ export interface AvatarHandle {
 
 function AvatarModel() {
   const gltf = useLoader(GLTFLoader, '/avatar.glb')
-  return <primitive object={gltf.scene} />
+  return (
+    <primitive
+      object={gltf.scene}
+      scale={[4, 4, 4]}
+      position={[0, -0.4, 0]}
+    />
+  )
 }
 
 const Avatar = forwardRef<AvatarHandle>((_props, ref) => {
@@ -80,7 +86,10 @@ const Avatar = forwardRef<AvatarHandle>((_props, ref) => {
   }))
 
   return (
-    <Canvas className="w-full h-full">
+    <Canvas
+      camera={{ position: [0, 1.2, 2.5], fov: 50 }}
+      className="w-full h-full"
+    >
       <ambientLight />
       <pointLight position={[10, 10, 10]} />
       <AvatarModel />
