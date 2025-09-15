@@ -15,7 +15,7 @@ function AvatarModel() {
     <primitive
       object={gltf.scene}
       scale={[4, 4, 4]}
-      position={[0, -0.4, 0]}
+      position={[0, -0.4, 1]}
     />
   )
 }
