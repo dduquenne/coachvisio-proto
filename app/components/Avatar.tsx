@@ -36,8 +36,8 @@ function AvatarModel({
   return (
     <primitive
       object={gltf.scene}
-      scale={[4, 4, 4]}
-      position={[0, -0.4, 1]}
+      scale={[3, 3, 3]}
+      position={[0, -2, 0]}
     />
   )
 }
@@ -91,7 +91,7 @@ const Avatar = forwardRef<AvatarHandle>((_props, ref) => {
 
   return (
     <Canvas
-      camera={{ position: [0, 1.2, 2.5], fov: 50 }}
+      camera={{ position: [0, 0, 2.5], fov: 25 }}
       className="w-full h-full"
     >
       <ambientLight />

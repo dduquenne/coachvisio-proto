@@ -244,9 +244,6 @@ export default function InterviewPage() {
   return (
     <main className="flex flex-col gap-4 max-w-3xl mx-auto p-6">
       <h1 className="text-2xl font-bold">Simulation d’entretien</h1>
-      <div className="w-full h-64">
-        <Avatar ref={avatarRef} />
-      </div>
       <PersonaSelect value={persona} onChange={setPersona} />
       <Timer
         onStateChange={(state) => {
@@ -256,6 +253,9 @@ export default function InterviewPage() {
           }
         }}
       />
+      <div className="w-128 h-128" style={{ position: "relative", top: 0, left: 96 }}>
+        <Avatar ref={avatarRef} />
+      </div>
       <MessageList messages={messages} />
 
       {summaryLoading && (
