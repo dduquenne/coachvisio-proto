@@ -18,7 +18,7 @@ export interface AvatarHandle {
 function AvatarModel({
   mouthRef,
 }: {
-  mouthRef: MutableRefObject<THREE.Object3D | null>
+  mouthRef: MutableRefObject<THREE.Mesh | null>
 }) {
   const gltf = useLoader(GLTFLoader, '/avatar.glb')
 
@@ -45,19 +45,31 @@ function AvatarModel({
 const Avatar = forwardRef<AvatarHandle>((_props, ref) => {
   const analyserRef = useRef<AnalyserNode | null>(null)
   const dataRef = useRef<Uint8Array | null>(null)
-  const mouthRef = useRef<THREE.Object3D | null>(null)
+  const mouthRef = useRef<THREE.Mesh | null>(null)
   const rafRef = useRef<number>()
 
   const animate = () => {
-    if (analyserRef.current && dataRef.current && mouthRef.current) {
+    if (
+      analyserRef.current &&
+      dataRef.current &&
+      mouthRef.current &&
+      mouthRef.current.morphTargetDictionary &&
+      mouthRef.current.morphTargetInfluences
+    ) {
       analyserRef.current.getByteTimeDomainData(dataRef.current)
       let sum = 0
       for (let i = 0; i < dataRef.current.length; i++) {
         sum += Math.abs(dataRef.current[i] - 128)
       }
       const amplitude = sum / dataRef.current.length / 128
-      const scale = THREE.MathUtils.clamp(1 + amplitude, 1, 1.5)
-      mouthRef.current.scale.y = scale
+      const index = mouthRef.current.morphTargetDictionary.mouthOpen
+      if (index !== undefined) {
+        mouthRef.current.morphTargetInfluences[index] = THREE.MathUtils.clamp(
+          amplitude * 2,
+          0,
+          1,
+        )
+      }
     }
     rafRef.current = requestAnimationFrame(animate)
   }
