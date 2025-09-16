@@ -8,20 +8,40 @@ import MessageList, { Message } from "@/app/components/MessageList"
 import Composer from "@/app/components/Composer"
 import Controls from "@/app/components/Controls"
 import Avatar, { AvatarHandle } from "@/app/components/Avatar"
-import { useState, useRef } from "react"
+import { useEffect, useRef, useState } from "react"
+import { useSearchParams } from "next/navigation"
 import ReactMarkdown from "react-markdown"
-import { PERSONAS, PersonaId } from "@/app/personas"
+import { PERSONAS, PersonaId, isPersonaId } from "@/app/personas"
 
 export default function InterviewPageClient() {
   // 💬 Historique de la conversation et état de la simulation
   const [messages, setMessages] = useState<Message[]>([])
-  const [persona, setPersona] = useState<PersonaId>("manager")
+  const searchParams = useSearchParams()
+  const personaFromQuery = searchParams.get("persona")
+  const [persona, setPersona] = useState<PersonaId>(() =>
+    isPersonaId(personaFromQuery) ? personaFromQuery : "manager"
+  )
   const [timerState, setTimerState] = useState<"idle" | "running" | "finished">("idle")
   const [summaryGenerated, setSummaryGenerated] = useState(false)
   const [summaryLoading, setSummaryLoading] = useState(false)
   const [summary, setSummary] = useState<string | null>(null)
+  const lastPersonaFromQuery = useRef<string | null>(personaFromQuery)
   // Référence vers l'avatar 3D pour lui attacher l'analyseur audio
   const avatarRef = useRef<AvatarHandle>(null)
+
+  useEffect(() => {
+    if (lastPersonaFromQuery.current === personaFromQuery) {
+      return
+    }
+
+    lastPersonaFromQuery.current = personaFromQuery
+
+    if (isPersonaId(personaFromQuery)) {
+      setPersona(personaFromQuery)
+    } else {
+      setPersona("manager")
+    }
+  }, [personaFromQuery])
 
   // 🔊 Déclenche la synthèse vocale d'un texte généré par l'IA.
   // On récupère un flux audio depuis notre API puis on le joue dans le navigateur.
