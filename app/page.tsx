@@ -1,5 +1,7 @@
 "use client"
 
+// 🧭 Page principale de simulation d'entretien. Elle orchestre l'avatar,
+// la reconnaissance vocale, le minuteur et la génération des réponses IA.
 import PersonaSelect from "@/app/components/PersonaSelect"
 import Timer from "@/app/components/Timer"
 import MessageList, { Message } from "@/app/components/MessageList"
@@ -11,14 +13,18 @@ import ReactMarkdown from "react-markdown"
 import { PERSONAS, PersonaId } from "@/app/personas"
 
 export default function InterviewPage() {
+  // 💬 Historique de la conversation et état de la simulation
   const [messages, setMessages] = useState<Message[]>([])
   const [persona, setPersona] = useState<PersonaId>("manager")
   const [timerState, setTimerState] = useState<"idle" | "running" | "finished">("idle")
   const [summaryGenerated, setSummaryGenerated] = useState(false)
   const [summaryLoading, setSummaryLoading] = useState(false)
   const [summary, setSummary] = useState<string | null>(null)
+  // Référence vers l'avatar 3D pour lui attacher l'analyseur audio
   const avatarRef = useRef<AvatarHandle>(null)
 
+  // 🔊 Déclenche la synthèse vocale d'un texte généré par l'IA.
+  // On récupère un flux audio depuis notre API puis on le joue dans le navigateur.
   const speak = async (text: string, personaId: PersonaId) => {
     if (typeof window === "undefined" || !text) return
     try {
@@ -54,6 +60,9 @@ export default function InterviewPage() {
     }
   }
 
+  // ✉️ Envoi d'un message utilisateur et gestion du flux de réponse de l'IA.
+  // On ajoute d'abord le message dans l'historique puis on écoute la réponse
+  // en streaming pour l'afficher progressivement.
   const handleSend = async (msg: Message) => {
     if (timerState !== "running") return
 
@@ -127,6 +136,8 @@ export default function InterviewPage() {
     }
   }
 
+  // 🤫 Gestion d'un silence prolongé de l'utilisateur : on force l'IA
+  // à relancer la conversation pour maintenir le rythme de l'entretien.
   const handleSilence = async () => {
     if (timerState !== "running") return
 
@@ -199,7 +210,7 @@ export default function InterviewPage() {
     }
   }
 
-  // ✅ Génération de synthèse automatique
+  // ✅ Génération automatique de la synthèse finale dès que le timer se termine.
   const generateSummary = async () => {
     if (summaryGenerated || summaryLoading) return
     setSummaryLoading(true)
@@ -239,6 +250,7 @@ export default function InterviewPage() {
     }
   }
 
+  // 🧹 Réinitialisation complète de la session : conversation, minuteur et synthèse.
   const handleClear = () => {
     setMessages([])
     setTimerState("idle")
@@ -309,6 +321,7 @@ export default function InterviewPage() {
         onSilence={handleSilence}
         disabled={timerState !== "running"}
       />
+      {/* Boutons de reset et export PDF */}
       <Controls onClear={handleClear} messages={messages} summary={summary} />
     </main>
   )

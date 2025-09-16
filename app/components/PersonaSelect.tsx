@@ -1,5 +1,6 @@
 "use client"
 
+// 🎭 Permet de choisir la persona avec laquelle interagir.
 import { PERSONAS, PersonaId } from "@/app/personas"
 
 type Props = {
@@ -12,6 +13,7 @@ export default function PersonaSelect({ value, onChange }: Props) {
     <div className="flex flex-col gap-2 p-4 rounded-2xl shadow bg-gray-50">
       <h2 className="text-lg font-semibold">Choisir une persona</h2>
       <div className="flex gap-3">
+        {/* Boucle sur toutes les personas déclarées pour proposer des boutons */}
         {Object.entries(PERSONAS).map(([id, p]) => (
           <button
             key={id}

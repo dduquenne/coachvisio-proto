@@ -1,3 +1,4 @@
+// 🧾 Route API chargée de produire une synthèse structurée de la conversation.
 import OpenAI from "openai"
 
 const client = new OpenAI({
@@ -19,6 +20,7 @@ export async function POST(req: Request) {
       )
     }
 
+    // 🧑‍💼 On ne conserve que les messages utilisateur pour l'analyse.
     const userOnlyTranscript = transcript.filter(
       (msg: { role: string }) => msg.role === "user"
     )
@@ -33,6 +35,7 @@ export async function POST(req: Request) {
     const privacyPrompt =
       "Ne fais aucune référence à des informations concernant le propriétaire du compte ChatGPT ou son identité. Base ton analyse uniquement sur la transcription fournie."
 
+    // 🧠 Appel au modèle pour synthétiser la session en trois volets.
     const completion = await client.chat.completions.create({
       model: "gpt-4o-mini",
       temperature: 0.5,

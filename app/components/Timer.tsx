@@ -1,5 +1,6 @@
 "use client"
 
+// ⏱️ Chronomètre d'entretien : lance la session et déclenche la synthèse finale.
 import { useEffect, useState, useRef } from "react"
 
 type Props = {
@@ -12,12 +13,14 @@ export default function Timer({ onStateChange }: Props) {
   const [state, setState] = useState<"idle" | "running" | "finished">("idle")
   const intervalRef = useRef<NodeJS.Timeout | null>(null)
 
+  // 🔢 Convertit les secondes restantes en format mm:ss lisible.
   const formatTime = (seconds: number) => {
     const m = Math.floor(seconds / 60).toString().padStart(2, "0")
     const s = Math.floor(seconds % 60).toString().padStart(2, "0")
     return `${m}:${s}`
   }
 
+  // ▶️ Lancement du décompte si le chrono n'est pas déjà en cours.
   const start = () => {
     if (state === "running") return
     setState("running")
@@ -34,11 +37,13 @@ export default function Timer({ onStateChange }: Props) {
     }, 1000)
   }
 
+  // ⏸️ Met immédiatement fin à la session en cours.
   const stop = () => {
     if (intervalRef.current) clearInterval(intervalRef.current)
     setState("finished")
   }
 
+  // 🔄 Réinitialise le timer pour une nouvelle tentative.
   const reset = () => {
     if (intervalRef.current) clearInterval(intervalRef.current)
     setRemaining(duration * 60)

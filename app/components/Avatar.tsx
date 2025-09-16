@@ -1,5 +1,8 @@
 'use client'
 
+// 🧑‍🚀 Avatar 3D synchronisé avec la voix du modèle.
+// Ce composant charge un modèle glTF et anime ses morph targets en fonction
+// d'un analyseur audio Web Audio API pour simuler la parole.
 import {
   forwardRef,
   useEffect,
@@ -11,6 +14,7 @@ import { Canvas, useLoader } from '@react-three/fiber'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import * as THREE from 'three'
 
+// 🎛️ Méthodes exposées au parent pour connecter une source audio externe.
 export interface AvatarHandle {
   attachAudioAnalyser(audio: HTMLAudioElement): Promise<void>
 }
@@ -32,10 +36,12 @@ function AvatarModel({
 }: {
   mouthMeshesRef: MutableRefObject<MorphableMesh[]>
 }) {
+  // Chargement du modèle 3D animé (glTF) une seule fois.
   const gltf = useLoader(GLTFLoader, '/avatar.glb')
 
   useEffect(() => {
     mouthMeshesRef.current = []
+    // On parcourt la scène pour récupérer toutes les meshes contrôlant la bouche.
     gltf.scene.traverse(child => {
       const mesh = child as MorphableMesh
       if (mesh.morphTargetDictionary?.mouthOpen !== undefined) {
@@ -78,6 +84,7 @@ const Avatar = forwardRef<AvatarHandle, AvatarProps>((
     noiseThresholdRef.current = noiseThreshold
   }, [noiseThreshold])
 
+  // 🌀 Animation continue : calcul de l'ouverture de bouche en fonction du spectre audio.
   const animate = () => {
     if (
       analyserRef.current &&
@@ -119,6 +126,7 @@ const Avatar = forwardRef<AvatarHandle, AvatarProps>((
     rafRef.current = requestAnimationFrame(animate)
   }
 
+  // ⏹️ Arrête toute lecture et libère les ressources audio.
   const stop = () => {
     if (rafRef.current) {
       cancelAnimationFrame(rafRef.current)
@@ -143,6 +151,7 @@ const Avatar = forwardRef<AvatarHandle, AvatarProps>((
   }, [])
 
   useImperativeHandle(ref, () => ({
+    // 📡 Connexion d'un élément audio HTML : création d'un contexte et d'un analyseur.
     async attachAudioAnalyser(audio: HTMLAudioElement) {
       stop()
       const AudioCtx =
