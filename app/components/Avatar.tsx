@@ -18,25 +18,31 @@ export interface AvatarHandle {
 interface AvatarProps {
   /** multiplier applied to mouth-open intensity */
   gain?: number
+  /** amplitude threshold below which the mouth stays closed */
+  noiseThreshold?: number
+}
+
+type MorphableMesh = THREE.Mesh & {
+  morphTargetDictionary?: Record<string, number>
+  morphTargetInfluences?: number[]
 }
 
 function AvatarModel({
-  mouthRef,
+  mouthMeshesRef,
 }: {
-  mouthRef: MutableRefObject<THREE.Mesh | null>
+  mouthMeshesRef: MutableRefObject<MorphableMesh[]>
 }) {
   const gltf = useLoader(GLTFLoader, '/avatar.glb')
 
   useEffect(() => {
+    mouthMeshesRef.current = []
     gltf.scene.traverse(child => {
-      const mesh = child as THREE.Mesh & {
-        morphTargetDictionary?: Record<string, number>
-      }
+      const mesh = child as MorphableMesh
       if (mesh.morphTargetDictionary?.mouthOpen !== undefined) {
-        mouthRef.current = mesh
+        mouthMeshesRef.current.push(mesh)
       }
     })
-  }, [gltf, mouthRef])
+  }, [gltf, mouthMeshesRef])
 
   return (
     <primitive
@@ -49,47 +55,66 @@ function AvatarModel({
 
 const VOICE_LOW_HZ = 80
 const VOICE_HIGH_HZ = 1000
-const NOISE_THRESHOLD = 0.05
+const DEFAULT_NOISE_THRESHOLD = 0.02
 
-const Avatar = forwardRef<AvatarHandle, AvatarProps>(({ gain = 3 }, ref) => {
+const Avatar = forwardRef<AvatarHandle, AvatarProps>((
+  { gain = 3, noiseThreshold = DEFAULT_NOISE_THRESHOLD },
+  ref,
+) => {
   const analyserRef = useRef<AnalyserNode | null>(null)
   const dataRef = useRef<Uint8Array | null>(null)
   const bandRef = useRef<{ low: number; high: number } | null>(null)
-  const mouthRef = useRef<THREE.Mesh | null>(null)
+  const mouthMeshesRef = useRef<MorphableMesh[]>([])
   const rafRef = useRef<number>()
   const ctxRef = useRef<AudioContext | null>(null)
+  const gainRef = useRef(gain)
+  const noiseThresholdRef = useRef(noiseThreshold)
+
+  useEffect(() => {
+    gainRef.current = gain
+  }, [gain])
+
+  useEffect(() => {
+    noiseThresholdRef.current = noiseThreshold
+  }, [noiseThreshold])
 
   const animate = () => {
     if (
       analyserRef.current &&
       dataRef.current &&
-      mouthRef.current &&
-      mouthRef.current.morphTargetDictionary &&
-      mouthRef.current.morphTargetInfluences &&
+      mouthMeshesRef.current.length > 0 &&
       bandRef.current
     ) {
       analyserRef.current.getByteFrequencyData(dataRef.current)
       const data = dataRef.current
       const { low, high } = bandRef.current
-      let sum = 0
+      let peak = 0
       for (let i = low; i <= high; i++) {
-        sum += data[i]
+        const magnitude = data[i] / 255
+        if (magnitude > peak) {
+          peak = magnitude
+        }
       }
-      const amplitude = sum / ((high - low + 1) * 255)
+      const amplitude = peak
+      const threshold = noiseThresholdRef.current
       const normalized =
-        amplitude > NOISE_THRESHOLD
-          ? (amplitude - NOISE_THRESHOLD) / (1 - NOISE_THRESHOLD)
+        amplitude > threshold
+          ? (amplitude - threshold) / (1 - threshold)
           : 0
-      const index = mouthRef.current.morphTargetDictionary.mouthOpen
-      if (index !== undefined) {
-        const target = THREE.MathUtils.clamp(normalized * gain, 0, 1)
-        const current = mouthRef.current.morphTargetInfluences[index] ?? 0
-        mouthRef.current.morphTargetInfluences[index] = THREE.MathUtils.lerp(
-          current,
-          target,
-          0.1,
-        )
-      }
+      const target = THREE.MathUtils.clamp(normalized * gainRef.current, 0, 1)
+      mouthMeshesRef.current.forEach(mesh => {
+        const dictionary = mesh.morphTargetDictionary
+        const influences = mesh.morphTargetInfluences
+        if (!dictionary || !influences) {
+          return
+        }
+        const index = dictionary.mouthOpen
+        if (index === undefined) {
+          return
+        }
+        const current = influences[index] ?? 0
+        influences[index] = THREE.MathUtils.lerp(current, target, 0.1)
+      })
     }
     rafRef.current = requestAnimationFrame(animate)
   }
@@ -154,7 +179,7 @@ const Avatar = forwardRef<AvatarHandle, AvatarProps>(({ gain = 3 }, ref) => {
     >
       <ambientLight />
       <pointLight position={[10, 10, 10]} />
-      <AvatarModel mouthRef={mouthRef} />
+      <AvatarModel mouthMeshesRef={mouthMeshesRef} />
     </Canvas>
   )
 })
