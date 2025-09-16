@@ -1,5 +1,6 @@
 "use client"
 
+// 💬 Affichage des échanges sous forme de bulles colorées et scroll automatique.
 import { useEffect, useRef, ReactNode } from "react"
 
 export type Message = {
@@ -15,6 +16,7 @@ type Props = {
 export default function MessageList({ messages }: Props) {
   const endRef = useRef<HTMLDivElement | null>(null)
 
+  // 🎯 Scroll automatique vers le bas à chaque nouveau message.
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [messages])
@@ -25,6 +27,7 @@ export default function MessageList({ messages }: Props) {
         let bubbleStyle = ""
         let content: ReactNode = msg.content
 
+        // 🎨 Style conditionnel suivant l'émetteur du message.
         if (msg.role === "user") {
           bubbleStyle = "bg-blue-500 text-white self-end"
         } else if (msg.role === "assistant") {
