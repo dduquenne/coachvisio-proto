@@ -1,5 +1,7 @@
 "use client"
 
+// 📝 Zone de composition des messages utilisateur.
+// Gère aussi le mode dictée vocale et la détection de silences prolongés.
 import { useRef, useState, useEffect, useCallback } from "react"
 import type { Message } from "./MessageList"
 
@@ -18,6 +20,8 @@ export default function Composer({ onSend, onSilence, disabled }: Props) {
   const silenceTimerRef = useRef<NodeJS.Timeout | null>(null)
   const wasVoiceModeRef = useRef(false)
 
+  // 🌐 Au montage, on teste la disponibilité de l'API Web Speech et on stocke
+  // la classe de reconnaissance pour pouvoir l'instancier plus tard.
   useEffect(() => {
     if (typeof window !== "undefined") {
       const SpeechRecognitionClass =
@@ -36,6 +40,7 @@ export default function Composer({ onSend, onSilence, disabled }: Props) {
     voiceModeRef.current = voiceMode
   }, [voiceMode])
 
+  // ✉️ Envoi manuel d'un message textuel classique.
   const handleSend = () => {
     if (!text.trim() || disabled) return
     onSend({
@@ -46,6 +51,7 @@ export default function Composer({ onSend, onSilence, disabled }: Props) {
     setText("")
   }
 
+  // ⏱️ Relance automatique de l'IA après 10 secondes de silence en mode voix.
   const resetSilenceTimer = useCallback(() => {
     if (!voiceModeRef.current) return
     if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current)
@@ -55,6 +61,7 @@ export default function Composer({ onSend, onSilence, disabled }: Props) {
     }, 10000)
   }, [onSilence])
 
+  // 🎙️ Active le mode reconnaissance vocale continue.
   const startVoiceMode = useCallback(() => {
     if (voiceModeRef.current || disabled) return
     const SpeechRecognition =
@@ -101,18 +108,22 @@ export default function Composer({ onSend, onSilence, disabled }: Props) {
     resetSilenceTimer()
   }, [disabled, onSend, resetSilenceTimer])
 
+  // ⏹️ Arrête proprement la dictée vocale et le timer de silence.
   const stopVoiceMode = useCallback(() => {
     setVoiceMode(false)
     if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current)
     recognitionRef.current?.stop()
   }, [])
 
+  // Si l'utilisateur désactive l'envoi (timer arrêté), on coupe aussi la dictée.
   useEffect(() => {
     if (disabled && voiceModeRef.current) {
       stopVoiceMode()
     }
   }, [disabled, stopVoiceMode])
 
+  // 🔄 Suspension automatique de la dictée quand l'avatar parle pour éviter
+  // que la voix synthétique soit reconnue comme une entrée utilisateur.
   useEffect(() => {
     const handleSpeakingStart = () => {
       if (voiceModeRef.current) {

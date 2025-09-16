@@ -1,5 +1,6 @@
 "use client"
 
+// 🧾 Actions finales : remise à zéro de la conversation et export PDF.
 import { Message } from "@/app/components/MessageList"
 import jsPDF from "jspdf"
 
@@ -10,6 +11,7 @@ type Props = {
 }
 
 export default function Controls({ onClear, messages, summary }: Props) {
+  // 📥 Génère un PDF contenant l'historique et la synthèse finale.
   const handleDownload = () => {
     if (!summary || messages.length === 0) return
     const doc = new jsPDF()
@@ -19,6 +21,7 @@ export default function Controls({ onClear, messages, summary }: Props) {
     const lineHeight = 7
     let y = margin
 
+    // 🗨️ Dessine chaque bulle de message avec un code couleur par rôle.
     messages.forEach(msg => {
       const textLines = doc.splitTextToSize(
         msg.content,
@@ -61,6 +64,7 @@ export default function Controls({ onClear, messages, summary }: Props) {
       y += bubbleHeight + 4
     })
 
+    // 🧠 Ajout d'une nouvelle page pour la synthèse structurée.
     doc.addPage()
     doc.setFont("helvetica", "bold")
     doc.setFontSize(18)
@@ -110,6 +114,7 @@ export default function Controls({ onClear, messages, summary }: Props) {
 
   return (
     <div className="flex gap-3 justify-center">
+      {/* 🔁 Permet de relancer un nouvel entretien immédiatement. */}
       <button
         onClick={onClear}
         className="rounded-2xl bg-gray-300 px-4 py-2 text-gray-800 shadow hover:bg-gray-400"

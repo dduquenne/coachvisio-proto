@@ -1,3 +1,6 @@
+// 📄 Définition du layout racine de l'application Next.js.
+// Ce fichier englobe toutes les pages et applique la configuration globale
+// (polices, langue du document, styles partagés).
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
@@ -22,11 +25,14 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // 🌐 Structure HTML de base : on définit la langue et on injecte les polices
+  // déclarées plus haut pour toutes les pages.
   return (
     <html lang="en">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        {/* Toutes les pages seront rendues ici */}
         {children}
       </body>
     </html>

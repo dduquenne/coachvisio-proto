@@ -1,4 +1,6 @@
 // app/api/chat/route.ts
+// 🚀 Route API responsable du streaming de réponses de la persona IA.
+// Elle prépare les prompts contextuels et renvoie la sortie d'OpenAI en direct.
 import OpenAI from "openai"
 import { PERSONAS, PersonaId } from "@/app/personas"
 
@@ -14,6 +16,7 @@ type Body = {
 }
 
 export async function POST(req: Request) {
+  // 🔐 Sécurité : on vérifie la présence de la clé avant toute requête.
   if (!process.env.OPENAI_API_KEY) {
     return new Response("OPENAI_API_KEY manquant côté serveur.", { status: 500 })
   }
@@ -25,6 +28,7 @@ export async function POST(req: Request) {
     return new Response("Corps de requête invalide (JSON).", { status: 400 })
   }
 
+  // 🎭 Sélection de la persona et du message utilisateur à transmettre au modèle.
   const persona = (body.persona || "manager").toLowerCase() as PersonaId
   const lastUserMessage = (body.lastUserMessage || "").trim()
   const systemPrompt = PERSONAS[persona]?.prompt ?? PERSONAS.manager.prompt
@@ -50,7 +54,7 @@ Format attendu en sortie :
   }
 
   try {
-    // Lancement du stream OpenAI (SDK v4)
+    // 🔄 Lancement du stream OpenAI (SDK v4)
     const stream = await client.chat.completions.stream({
       model: "gpt-4o-mini",
       temperature: 0.6,
@@ -71,6 +75,7 @@ Format attendu en sortie :
 
     const encoder = new TextEncoder()
 
+    // 📡 On convertit le flux OpenAI en ReadableStream natif pour le client.
     const readable = new ReadableStream({
       async start(controller) {
         try {

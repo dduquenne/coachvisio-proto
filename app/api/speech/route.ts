@@ -1,3 +1,4 @@
+// 🔊 Route API qui convertit le texte des réponses en audio (text-to-speech).
 import OpenAI from "openai"
 
 export const runtime = "nodejs"
@@ -36,12 +37,13 @@ export async function POST(req: Request) {
   }
 
   try {
-    // Construction d'un texte SSML pour moduler rythme, hauteur et style.
+    // 🎼 Construction d'un texte SSML pour moduler rythme, hauteur et style.
     let ssml = `<speak><prosody rate="${rate}" pitch="${pitch}">${text}</prosody></speak>`
     if (style) {
       ssml = `<speak><prosody rate="${rate}" pitch="${pitch}"><emphasis level="${style}">${text}</emphasis></prosody></speak>`
     }
 
+    // 🗣️ Appel au modèle de synthèse vocale adapté aux voix expressives.
     const speech = await client.audio.speech.create({
       model: "gpt-4o-mini-tts",
       voice,
@@ -50,6 +52,7 @@ export async function POST(req: Request) {
 
     const buffer = Buffer.from(await speech.arrayBuffer())
 
+    // 🔁 Renvoi du buffer audio directement dans la réponse HTTP.
     return new Response(buffer, {
       headers: {
         "Content-Type": "audio/mpeg",
