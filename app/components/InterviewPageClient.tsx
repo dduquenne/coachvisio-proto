@@ -8,6 +8,7 @@ import MessageList, { Message } from "@/app/components/MessageList"
 import Composer from "@/app/components/Composer"
 import Controls from "@/app/components/Controls"
 import Avatar, { AvatarHandle } from "@/app/components/Avatar"
+import { useSessionTime } from "@/app/context/SessionTimeContext"
 import { useEffect, useRef, useState } from "react"
 import { useSearchParams } from "next/navigation"
 import ReactMarkdown from "react-markdown"
@@ -28,6 +29,7 @@ export default function InterviewPageClient() {
   const lastPersonaFromQuery = useRef<string | null>(personaFromQuery)
   // Référence vers l'avatar 3D pour lui attacher l'analyseur audio
   const avatarRef = useRef<AvatarHandle>(null)
+  const { deductTime } = useSessionTime()
 
   useEffect(() => {
     if (lastPersonaFromQuery.current === personaFromQuery) {
@@ -286,6 +288,9 @@ export default function InterviewPageClient() {
           if (state === "finished") {
             generateSummary()
           }
+        }}
+        onStop={(elapsedSeconds) => {
+          deductTime(elapsedSeconds * 1000)
         }}
       />
       <div className="w-128 h-128" style={{ position: "relative", top: 0, left: 96 }}>
