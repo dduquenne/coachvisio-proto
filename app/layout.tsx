@@ -1,6 +1,7 @@
 // 📄 Définition du layout racine de l'application Next.js.
 // Ce fichier englobe toutes les pages et applique la configuration globale
 // (polices, langue du document, styles partagés).
+import { SessionTimeProvider } from "@/app/context/SessionTimeContext";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
@@ -33,7 +34,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         {/* Toutes les pages seront rendues ici */}
-        {children}
+        <SessionTimeProvider>{children}</SessionTimeProvider>
       </body>
     </html>
   );
