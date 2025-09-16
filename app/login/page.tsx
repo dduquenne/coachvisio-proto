@@ -36,7 +36,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
           </p>
         )}
 
-        <form method="post" className="space-y-5">
+        <form method="post" action="/api/login" className="space-y-5">
           <div className="space-y-1">
             <label htmlFor="identifiant" className="text-sm font-medium text-gray-700">
               Identifiant
