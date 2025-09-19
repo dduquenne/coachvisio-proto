@@ -12,11 +12,16 @@ import {
 
 const SESSION_DURATION_MS = 60 * 60 * 1000
 const STORAGE_KEY = "coachvisio-session-remaining"
+const SESSION_STORAGE_KEY = "coachvisio-session-remaining-session"
+
+const clampRemaining = (value: number) =>
+  Math.min(SESSION_DURATION_MS, Math.max(0, Math.round(value)))
 
 type SessionTimeContextValue = {
   remainingMs: number
   deductTime: (milliseconds: number) => void
   reset: () => void
+  persistRemaining: (value?: number) => void
 }
 
 const SessionTimeContext = createContext<SessionTimeContextValue | undefined>(
@@ -34,13 +39,20 @@ export function SessionTimeProvider({ children }: SessionTimeProviderProps) {
   useEffect(() => {
     if (typeof window === "undefined") return
 
-    const stored = window.localStorage.getItem(STORAGE_KEY)
+    const storedSession = window.sessionStorage.getItem(SESSION_STORAGE_KEY)
+    const storedLocal = window.localStorage.getItem(STORAGE_KEY)
+    const stored = storedSession ?? storedLocal
+
     if (stored !== null) {
       const parsed = Number(stored)
       if (Number.isFinite(parsed)) {
-        setRemainingMs(
-          Math.min(SESSION_DURATION_MS, Math.max(0, Math.round(parsed))),
+        const normalized = clampRemaining(parsed)
+        setRemainingMs(normalized)
+        window.sessionStorage.setItem(
+          SESSION_STORAGE_KEY,
+          String(normalized),
         )
+        window.localStorage.setItem(STORAGE_KEY, String(normalized))
       }
     }
 
@@ -50,8 +62,11 @@ export function SessionTimeProvider({ children }: SessionTimeProviderProps) {
       if (event.key === STORAGE_KEY && event.newValue != null) {
         const parsed = Number(event.newValue)
         if (Number.isFinite(parsed)) {
-          setRemainingMs(
-            Math.min(SESSION_DURATION_MS, Math.max(0, Math.round(parsed))),
+          const normalized = clampRemaining(parsed)
+          setRemainingMs(normalized)
+          window.sessionStorage.setItem(
+            SESSION_STORAGE_KEY,
+            String(normalized),
           )
         }
       }
@@ -64,10 +79,23 @@ export function SessionTimeProvider({ children }: SessionTimeProviderProps) {
     }
   }, [])
 
+  const persistRemaining = useCallback(
+    (value?: number) => {
+      if (typeof window === "undefined") return
+
+      const target = value ?? remainingMs
+      const normalized = clampRemaining(target)
+
+      window.sessionStorage.setItem(SESSION_STORAGE_KEY, String(normalized))
+      window.localStorage.setItem(STORAGE_KEY, String(normalized))
+    },
+    [remainingMs],
+  )
+
   useEffect(() => {
     if (!isReady || typeof window === "undefined") return
-    window.localStorage.setItem(STORAGE_KEY, String(remainingMs))
-  }, [remainingMs, isReady])
+    persistRemaining(remainingMs)
+  }, [remainingMs, isReady, persistRemaining])
 
   const deductTime = useCallback((milliseconds: number) => {
     if (!Number.isFinite(milliseconds) || milliseconds <= 0) return
@@ -85,8 +113,8 @@ export function SessionTimeProvider({ children }: SessionTimeProviderProps) {
   }, [])
 
   const value = useMemo(
-    () => ({ remainingMs, deductTime, reset }),
-    [remainingMs, deductTime, reset],
+    () => ({ remainingMs, deductTime, reset, persistRemaining }),
+    [remainingMs, deductTime, reset, persistRemaining],
   )
 
   return (

@@ -33,7 +33,43 @@ export default function InterviewPageClient() {
   const lastPersonaFromQuery = useRef<string | null>(personaFromQuery)
   // Référence vers l'avatar 3D pour lui attacher l'analyseur audio
   const avatarRef = useRef<AvatarHandle>(null)
-  const { deductTime } = useSessionTime()
+  const { deductTime, persistRemaining } = useSessionTime()
+  const previousTimerStateRef = useRef<typeof timerState>(timerState)
+
+  useEffect(() => {
+    if (timerState !== "running") {
+      return
+    }
+
+    let lastTick = Date.now()
+
+    const intervalId = window.setInterval(() => {
+      const now = Date.now()
+      const delta = now - lastTick
+      lastTick = now
+      deductTime(delta)
+    }, 1000)
+
+    return () => {
+      window.clearInterval(intervalId)
+      const now = Date.now()
+      const delta = now - lastTick
+      if (delta > 0) {
+        deductTime(delta)
+      }
+    }
+  }, [timerState, deductTime])
+
+  useEffect(() => {
+    if (
+      previousTimerStateRef.current === "running" &&
+      timerState !== "running"
+    ) {
+      persistRemaining()
+    }
+
+    previousTimerStateRef.current = timerState
+  }, [timerState, persistRemaining])
 
   useEffect(() => {
     if (lastPersonaFromQuery.current === personaFromQuery) {
@@ -312,7 +348,6 @@ export default function InterviewPageClient() {
           }
         }}
         onStop={(elapsedSeconds) => {
-          deductTime(elapsedSeconds * 1000)
           setElapsedSeconds(Math.round(elapsedSeconds))
         }}
       />
