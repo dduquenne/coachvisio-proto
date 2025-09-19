@@ -29,6 +29,7 @@ export default function InterviewPageClient() {
   const [summaryLoading, setSummaryLoading] = useState(false)
   const [summary, setSummary] = useState<string | null>(null)
   const [isSummaryModalOpen, setIsSummaryModalOpen] = useState(false)
+  const [elapsedSeconds, setElapsedSeconds] = useState<number | null>(null)
   const lastPersonaFromQuery = useRef<string | null>(personaFromQuery)
   // Référence vers l'avatar 3D pour lui attacher l'analyseur audio
   const avatarRef = useRef<AvatarHandle>(null)
@@ -281,6 +282,7 @@ export default function InterviewPageClient() {
     setSummaryLoading(false)
     setSummary(null)
     setIsSummaryModalOpen(false)
+    setElapsedSeconds(null)
   }
 
   const handleSummaryListen = () => {
@@ -290,7 +292,12 @@ export default function InterviewPageClient() {
 
   const handleSummaryDownload = () => {
     if (!summary) return
-    downloadConversationPdf({ messages, summary, persona })
+    downloadConversationPdf({
+      messages,
+      summary,
+      persona,
+      durationSeconds: elapsedSeconds ?? 0,
+    })
   }
 
   return (
@@ -306,6 +313,7 @@ export default function InterviewPageClient() {
         }}
         onStop={(elapsedSeconds) => {
           deductTime(elapsedSeconds * 1000)
+          setElapsedSeconds(Math.round(elapsedSeconds))
         }}
       />
       <div className="flex flex-col items-center gap-4">
@@ -345,6 +353,7 @@ export default function InterviewPageClient() {
         messages={messages}
         summary={summary}
         persona={persona}
+        durationSeconds={elapsedSeconds}
       />
 
       {summary && isSummaryModalOpen && (

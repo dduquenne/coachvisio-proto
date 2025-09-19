@@ -10,12 +10,14 @@ type Props = {
   messages: Message[]
   summary: string | null
   persona: PersonaId
+  durationSeconds: number | null
 }
 
 type DownloadParams = {
   messages: Message[]
   summary: string
   persona: PersonaId
+  durationSeconds: number
 }
 
 let downloadSequence = 1
@@ -24,6 +26,7 @@ export const downloadConversationPdf = ({
   messages,
   summary,
   persona,
+  durationSeconds,
 }: DownloadParams) => {
   const doc = new jsPDF()
   const pageWidth = doc.internal.pageSize.getWidth()
@@ -131,6 +134,21 @@ export const downloadConversationPdf = ({
   downloadSequence += 1
   const fileName = `${formattedDate}_${sequence}_${persona}.pdf`
 
+  const pdfBlob = doc.output("blob")
+
+  const formData = new FormData()
+  formData.append("persona", persona)
+  formData.append("durationSeconds", String(Math.round(durationSeconds)))
+  formData.append("fileName", fileName)
+  formData.append("file", pdfBlob, fileName)
+
+  void fetch("/api/reports", {
+    method: "POST",
+    body: formData,
+  }).catch(error => {
+    console.error("Erreur lors de l'enregistrement du rapport", error)
+  })
+
   doc.save(fileName)
 }
 
@@ -139,11 +157,17 @@ export default function Controls({
   messages,
   summary,
   persona,
+  durationSeconds,
 }: Props) {
   // 📥 Génère un PDF contenant l'historique et la synthèse finale.
   const handleDownload = () => {
-    if (!summary || messages.length === 0) return
-    downloadConversationPdf({ messages, summary, persona })
+    if (!summary || messages.length === 0 || durationSeconds == null) return
+    downloadConversationPdf({
+      messages,
+      summary,
+      persona,
+      durationSeconds,
+    })
   }
 
   return (
