@@ -2,6 +2,7 @@
 
 // 🎭 Permet de choisir la persona avec laquelle interagir.
 import Image from "next/image"
+import Link from "next/link"
 import RemainingTime from "@/app/components/RemainingTime"
 import { PERSONAS, PersonaId } from "@/app/personas"
 
@@ -15,7 +16,15 @@ export default function PersonaSelect({ value, onChange }: Props) {
     <section className="flex flex-col gap-6 rounded-2xl bg-gray-50 p-6 shadow">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h2 className="text-lg font-semibold text-gray-900">Choisir une persona</h2>
-        <RemainingTime />
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+          <RemainingTime />
+          <Link
+            href="/reports"
+            className="inline-flex items-center justify-center rounded-2xl border border-blue-200 bg-white px-4 py-2 text-sm font-semibold text-blue-700 shadow-sm transition hover:bg-blue-50"
+          >
+            Historique
+          </Link>
+        </div>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
