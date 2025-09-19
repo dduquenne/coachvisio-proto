@@ -293,8 +293,17 @@ export default function InterviewPageClient() {
           deductTime(elapsedSeconds * 1000)
         }}
       />
-      <div className="w-128 h-128" style={{ position: "relative", top: 0, left: 96 }}>
-        <Avatar ref={avatarRef} />
+      <div className="flex flex-col items-center gap-4">
+        <div className="w-128 h-128" style={{ position: "relative", top: 0, left: 96 }}>
+          <Avatar ref={avatarRef} />
+        </div>
+        <Composer
+          onSend={msg =>
+            handleSend({ ...msg, id: "", role: "user", content: msg.content })
+          }
+          onSilence={handleSilence}
+          disabled={timerState !== "running"}
+        />
       </div>
       <MessageList messages={messages} />
 
@@ -336,13 +345,6 @@ export default function InterviewPageClient() {
         </div>
       )}
 
-      <Composer
-        onSend={msg =>
-          handleSend({ ...msg, id: "", role: "user", content: msg.content })
-        }
-        onSilence={handleSilence}
-        disabled={timerState !== "running"}
-      />
       {/* Boutons de reset et export PDF */}
       <Controls onClear={handleClear} messages={messages} summary={summary} />
     </main>
