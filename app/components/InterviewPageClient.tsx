@@ -352,7 +352,7 @@ export default function InterviewPageClient() {
           summary={summary}
           onListen={handleSummaryListen}
           onDownload={handleSummaryDownload}
-          onClose={() => setIsSummaryModalOpen(false)}
+          onClose={handleClear}
         />
       )}
     </main>
