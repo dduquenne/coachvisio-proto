@@ -6,13 +6,15 @@ import PersonaSelect from "@/app/components/PersonaSelect"
 import Timer from "@/app/components/Timer"
 import MessageList, { Message } from "@/app/components/MessageList"
 import Composer from "@/app/components/Composer"
-import Controls from "@/app/components/Controls"
+import Controls, {
+  downloadConversationPdf,
+} from "@/app/components/Controls"
 import Avatar, { AvatarHandle } from "@/app/components/Avatar"
 import { useSessionTime } from "@/app/context/SessionTimeContext"
 import { useEffect, useRef, useState } from "react"
 import { useSearchParams } from "next/navigation"
-import ReactMarkdown from "react-markdown"
 import { PERSONAS, PersonaId, isPersonaId } from "@/app/personas"
+import SummaryModal from "@/app/components/SummaryModal"
 
 export default function InterviewPageClient() {
   // 💬 Historique de la conversation et état de la simulation
@@ -26,6 +28,7 @@ export default function InterviewPageClient() {
   const [summaryGenerated, setSummaryGenerated] = useState(false)
   const [summaryLoading, setSummaryLoading] = useState(false)
   const [summary, setSummary] = useState<string | null>(null)
+  const [isSummaryModalOpen, setIsSummaryModalOpen] = useState(false)
   const lastPersonaFromQuery = useRef<string | null>(personaFromQuery)
   // Référence vers l'avatar 3D pour lui attacher l'analyseur audio
   const avatarRef = useRef<AvatarHandle>(null)
@@ -245,6 +248,7 @@ export default function InterviewPageClient() {
         const data = await res.json()
         setSummary(data.summary)
         setSummaryGenerated(true)
+        setIsSummaryModalOpen(true)
       } else {
         setMessages(prev => [
           ...prev,
@@ -276,6 +280,17 @@ export default function InterviewPageClient() {
     setSummaryGenerated(false)
     setSummaryLoading(false)
     setSummary(null)
+    setIsSummaryModalOpen(false)
+  }
+
+  const handleSummaryListen = () => {
+    if (!summary) return
+    void speak(summary, persona)
+  }
+
+  const handleSummaryDownload = () => {
+    if (!summary) return
+    downloadConversationPdf({ messages, summary, persona })
   }
 
   return (
@@ -313,40 +328,33 @@ export default function InterviewPageClient() {
         </div>
       )}
 
-      {summary && (
-        <div className="rounded-2xl shadow bg-green-50 text-green-900 border border-green-300 p-6">
-          <ReactMarkdown
-            components={{
-              h1: ({ ...props }) => (
-                <h1
-                  className="text-2xl font-bold text-green-800 mb-4 border-b pb-2"
-                  {...props}
-                />
-              ),
-              h2: ({ ...props }) => (
-                <h2
-                  className="text-xl font-semibold text-green-700 mt-4 mb-2"
-                  {...props}
-                />
-              ),
-              ul: ({ ...props }) => (
-                <ul className="list-disc list-inside space-y-1" {...props} />
-              ),
-              li: ({ ...props }) => (
-                <li className="leading-snug" {...props} />
-              ),
-              p: ({ ...props }) => (
-                <p className="my-1 leading-relaxed" {...props} />
-              ),
-            }}
+      {summary && !isSummaryModalOpen && (
+        <div className="flex justify-center">
+          <button
+            onClick={() => setIsSummaryModalOpen(true)}
+            className="rounded-2xl bg-green-600 px-4 py-2 text-white shadow hover:bg-green-700"
           >
-            {summary}
-          </ReactMarkdown>
+            Afficher la synthèse
+          </button>
         </div>
       )}
 
       {/* Boutons de reset et export PDF */}
-      <Controls onClear={handleClear} messages={messages} summary={summary} />
+      <Controls
+        onClear={handleClear}
+        messages={messages}
+        summary={summary}
+        persona={persona}
+      />
+
+      {summary && isSummaryModalOpen && (
+        <SummaryModal
+          summary={summary}
+          onListen={handleSummaryListen}
+          onDownload={handleSummaryDownload}
+          onClose={() => setIsSummaryModalOpen(false)}
+        />
+      )}
     </main>
   )
 }
