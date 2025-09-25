@@ -4,6 +4,8 @@ import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
 import Link from "next/link"
 
+export const dynamic = "force-dynamic"
+
 const ERROR_MESSAGE = "Identifiant ou mot de passe invalide."
 
 type LoginPageProps = {
