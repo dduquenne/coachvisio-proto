@@ -1,14 +1,5 @@
-import InterviewPageClient from "@/app/components/InterviewPageClient"
-import { SESSION_COOKIE_NAME } from "@/app/lib/auth"
-import { cookies } from "next/headers"
-import { redirect } from "next/navigation"
+import LandingPage from "@/app/components/landing/LandingPage"
 
-export default function InterviewPage() {
-  const session = cookies().get(SESSION_COOKIE_NAME)
-
-  if (!session) {
-    redirect("/login")
-  }
-
-  return <InterviewPageClient />
+export default function HomePage() {
+  return <LandingPage />
 }
