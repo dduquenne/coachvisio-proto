@@ -12,17 +12,21 @@ import Controls, {
 import Avatar, { AvatarHandle } from "@/app/components/Avatar"
 import { useSessionTime } from "@/app/context/SessionTimeContext"
 import { useEffect, useRef, useState } from "react"
-import { useSearchParams } from "next/navigation"
+import { useRouter } from "next/navigation"
 import { PERSONAS, PersonaId, isPersonaId } from "@/app/personas"
 import SummaryModal from "@/app/components/SummaryModal"
 
-export default function InterviewPageClient() {
+type InterviewPageClientProps = {
+  initialPersonaId?: PersonaId
+}
+
+export default function InterviewPageClient({
+  initialPersonaId = "manager",
+}: InterviewPageClientProps) {
   // 💬 Historique de la conversation et état de la simulation
   const [messages, setMessages] = useState<Message[]>([])
-  const searchParams = useSearchParams()
-  const personaFromQuery = searchParams.get("persona")
   const [persona, setPersona] = useState<PersonaId>(() =>
-    isPersonaId(personaFromQuery) ? personaFromQuery : "manager"
+    isPersonaId(initialPersonaId) ? initialPersonaId : "manager"
   )
   const [timerState, setTimerState] = useState<"idle" | "running" | "finished">("idle")
   const [summaryGenerated, setSummaryGenerated] = useState(false)
@@ -30,11 +34,17 @@ export default function InterviewPageClient() {
   const [summary, setSummary] = useState<string | null>(null)
   const [isSummaryModalOpen, setIsSummaryModalOpen] = useState(false)
   const [elapsedSeconds, setElapsedSeconds] = useState<number | null>(null)
-  const lastPersonaFromQuery = useRef<string | null>(personaFromQuery)
   // Référence vers l'avatar 3D pour lui attacher l'analyseur audio
   const avatarRef = useRef<AvatarHandle>(null)
   const { deductTime, persistRemaining } = useSessionTime()
   const previousTimerStateRef = useRef<typeof timerState>(timerState)
+  const router = useRouter()
+
+  useEffect(() => {
+    if (isPersonaId(initialPersonaId)) {
+      setPersona(initialPersonaId)
+    }
+  }, [initialPersonaId])
 
   useEffect(() => {
     if (timerState !== "running") {
@@ -70,20 +80,6 @@ export default function InterviewPageClient() {
 
     previousTimerStateRef.current = timerState
   }, [timerState, persistRemaining])
-
-  useEffect(() => {
-    if (lastPersonaFromQuery.current === personaFromQuery) {
-      return
-    }
-
-    lastPersonaFromQuery.current = personaFromQuery
-
-    if (isPersonaId(personaFromQuery)) {
-      setPersona(personaFromQuery)
-    } else {
-      setPersona("manager")
-    }
-  }, [personaFromQuery])
 
   // 🔊 Déclenche la synthèse vocale d'un texte généré par l'IA.
   // On récupère un flux audio depuis notre API puis on le joue dans le navigateur.
@@ -321,6 +317,11 @@ export default function InterviewPageClient() {
     setElapsedSeconds(null)
   }
 
+  const handleReturnToDashboard = () => {
+    handleClear()
+    router.push("/")
+  }
+
   const handleSummaryListen = () => {
     if (!summary) return
     void speak(summary, persona)
@@ -396,7 +397,7 @@ export default function InterviewPageClient() {
           summary={summary}
           onListen={handleSummaryListen}
           onDownload={handleSummaryDownload}
-          onClose={handleClear}
+          onClose={handleReturnToDashboard}
         />
       )}
     </main>
