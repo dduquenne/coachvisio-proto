@@ -2,7 +2,6 @@
 
 import ReactMarkdown from "react-markdown"
 import type { Components } from "react-markdown"
-import { useRouter } from "next/navigation"
 
 const markdownComponents: Components = {
   h1: ({ ...props }) => (
@@ -29,18 +28,11 @@ export default function SummaryModal({
   onDownload,
   onClose,
 }: SummaryModalProps) {
-  const router = useRouter()
-
-  const handleClose = () => {
-    onClose()
-    router.push("/")
-  }
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
       <div className="relative max-h-[90vh] w-full max-w-3xl overflow-hidden rounded-2xl border border-green-300 bg-green-50 p-6 shadow-xl">
         <button
-          onClick={handleClose}
+          onClick={onClose}
           className="absolute right-4 top-4 rounded-full bg-green-100 px-3 py-1 text-sm font-semibold text-green-700 transition hover:bg-green-200"
           aria-label="Fermer la synthèse"
         >

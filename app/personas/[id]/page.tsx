@@ -43,7 +43,7 @@ export default function PersonaPage({ params }: PersonaPageProps) {
         </section>
 
         <Link
-          href={`/?persona=${id}`}
+          href={`/simulations/${id}`}
           className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-base font-semibold text-white shadow transition hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
         >
           Démarrer la simulation
