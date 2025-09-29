@@ -333,7 +333,7 @@ export default function InterviewPageClient({
       const storageKey = `coachvisio-live-report-${Date.now()}`
 
       try {
-        window.sessionStorage.setItem(storageKey, JSON.stringify(payload))
+        window.localStorage.setItem(storageKey, JSON.stringify(payload))
       } catch {
         setMessages(prev => [
           ...prev,
@@ -354,6 +354,7 @@ export default function InterviewPageClient({
       )
 
       if (!reportWindow) {
+        window.localStorage.removeItem(storageKey)
         setMessages(prev => [
           ...prev,
           {
