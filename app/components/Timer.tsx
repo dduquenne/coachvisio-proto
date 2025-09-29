@@ -1,26 +1,41 @@
 "use client"
 
-// ⏱️ Chronomètre d'entretien : lance la session, calcule le temps réel écoulé
-// et déclenche la synthèse finale lorsque la session se termine.
-import { useCallback, useEffect, useRef, useState } from "react"
+// ⏱️ Chronomètre d'entretien : fournit le temps restant et les actions de
+// démarrage, pause, reprise et arrêt. L'interface finale est déléguée au
+// composant parent via un render prop.
+import { ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react"
 
-type TimerState = "idle" | "running" | "finished"
+export type TimerState = "idle" | "running" | "paused" | "finished"
+
+type TimerRenderProps = {
+  state: TimerState
+  remainingSeconds: number
+  formattedRemaining: string
+  start: () => void
+  pause: () => void
+  stop: () => void
+}
 
 type Props = {
   onStateChange?: (state: TimerState) => void
   onStop?: (elapsedSeconds: number) => void
+  children?: (props: TimerRenderProps) => ReactNode
 }
 
-const DURATION_MINUTES = 10
+const DURATION_MINUTES = 15
 const DURATION_SECONDS = DURATION_MINUTES * 60
 
-export default function Timer({ onStateChange, onStop }: Props) {
+export default function Timer({ onStateChange, onStop, children }: Props) {
   const [remaining, setRemaining] = useState(DURATION_SECONDS)
   const [state, setState] = useState<TimerState>("idle")
   const intervalRef = useRef<NodeJS.Timeout | null>(null)
   const startTimestampRef = useRef<number | null>(null)
-  const lastElapsedRef = useRef(0)
+  const remainingRef = useRef(remaining)
   const stateRef = useRef<TimerState>(state)
+
+  useEffect(() => {
+    remainingRef.current = remaining
+  }, [remaining])
 
   useEffect(() => {
     stateRef.current = state
@@ -35,53 +50,64 @@ export default function Timer({ onStateChange, onStop }: Props) {
     }
   }, [])
 
+  const clearIntervalRef = useCallback(() => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current)
+      intervalRef.current = null
+    }
+  }, [])
+
   const stopInternal = useCallback(
     (completed: boolean) => {
-      if (stateRef.current !== "running") return
+      const currentState = stateRef.current
+      if (currentState !== "running" && currentState !== "paused") return
 
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current)
-        intervalRef.current = null
-      }
-
-      let elapsedSeconds: number
-      if (completed) {
-        elapsedSeconds = DURATION_SECONDS
-      } else if (startTimestampRef.current != null) {
-        elapsedSeconds = Math.min(
+      if (currentState === "running" && startTimestampRef.current != null) {
+        const elapsed = Math.min(
           DURATION_SECONDS,
           Math.max(0, (Date.now() - startTimestampRef.current) / 1000),
         )
-      } else {
-        elapsedSeconds = Math.min(DURATION_SECONDS, lastElapsedRef.current)
+        const nextRemaining = Math.max(
+          0,
+          Math.ceil(DURATION_SECONDS - elapsed),
+        )
+        remainingRef.current = nextRemaining
+        setRemaining(nextRemaining)
       }
 
-      const remainingAfterStop = completed
-        ? 0
-        : Math.max(0, Math.ceil(DURATION_SECONDS - elapsedSeconds))
-
-      lastElapsedRef.current = elapsedSeconds
+      clearIntervalRef()
       startTimestampRef.current = null
 
-      setRemaining(remainingAfterStop)
+      const elapsedSeconds = completed
+        ? DURATION_SECONDS
+        : DURATION_SECONDS - remainingRef.current
+
+      if (completed) {
+        remainingRef.current = 0
+        setRemaining(0)
+      }
+
       stateRef.current = "finished"
       setState("finished")
-      onStop?.(elapsedSeconds)
+      onStop?.(
+        Math.min(DURATION_SECONDS, Math.max(0, Math.round(elapsedSeconds))),
+      )
     },
-    [onStop],
+    [clearIntervalRef, onStop],
   )
 
   const start = useCallback(() => {
     if (stateRef.current === "running") return
 
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current)
-      intervalRef.current = null
+    clearIntervalRef()
+
+    if (stateRef.current === "idle" || stateRef.current === "finished") {
+      remainingRef.current = DURATION_SECONDS
+      setRemaining(DURATION_SECONDS)
     }
 
-    startTimestampRef.current = Date.now()
-    lastElapsedRef.current = 0
-    setRemaining(DURATION_SECONDS)
+    const alreadyElapsed = DURATION_SECONDS - remainingRef.current
+    startTimestampRef.current = Date.now() - alreadyElapsed * 1000
     stateRef.current = "running"
     setState("running")
 
@@ -92,13 +118,12 @@ export default function Timer({ onStateChange, onStop }: Props) {
         DURATION_SECONDS,
         Math.max(0, (Date.now() - startTimestampRef.current) / 1000),
       )
-      lastElapsedRef.current = elapsedSeconds
-
       const nextRemaining = Math.max(
         0,
         Math.ceil(DURATION_SECONDS - elapsedSeconds),
       )
 
+      remainingRef.current = nextRemaining
       setRemaining(nextRemaining)
 
       if (nextRemaining === 0) {
@@ -108,64 +133,57 @@ export default function Timer({ onStateChange, onStop }: Props) {
 
     update()
     intervalRef.current = setInterval(update, 250)
-  }, [stopInternal])
+  }, [clearIntervalRef, stopInternal])
+
+  const pause = useCallback(() => {
+    if (stateRef.current !== "running") return
+
+    if (startTimestampRef.current != null) {
+      const elapsedSeconds = Math.min(
+        DURATION_SECONDS,
+        Math.max(0, (Date.now() - startTimestampRef.current) / 1000),
+      )
+      const nextRemaining = Math.max(
+        0,
+        Math.ceil(DURATION_SECONDS - elapsedSeconds),
+      )
+      remainingRef.current = nextRemaining
+      setRemaining(nextRemaining)
+    }
+
+    clearIntervalRef()
+    startTimestampRef.current = null
+    stateRef.current = "paused"
+    setState("paused")
+  }, [clearIntervalRef])
 
   const stop = useCallback(() => {
+    if (stateRef.current === "idle" || stateRef.current === "finished") return
     stopInternal(false)
   }, [stopInternal])
 
-  const reset = useCallback(() => {
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current)
-      intervalRef.current = null
-    }
-    startTimestampRef.current = null
-    lastElapsedRef.current = 0
-    stateRef.current = "idle"
-    setState("idle")
-    setRemaining(DURATION_SECONDS)
-  }, [])
-
-  const formatTime = (seconds: number) => {
-    const m = Math.floor(seconds / 60)
+  const formattedRemaining = useMemo(() => {
+    const minutes = Math.floor(remaining / 60)
       .toString()
       .padStart(2, "0")
-    const s = Math.floor(seconds % 60)
+    const seconds = Math.floor(remaining % 60)
       .toString()
       .padStart(2, "0")
-    return `${m}:${s}`
-  }
+    return `${minutes}:${seconds}`
+  }, [remaining])
 
-  return (
-    <div className="flex flex-col gap-3 rounded-2xl bg-gray-50 p-4 shadow">
-      <div className="text-center text-sm text-gray-600">
-        Durée fixe : {DURATION_MINUTES} minutes
-      </div>
+  const content = children
+    ? children({
+        state,
+        remainingSeconds: remaining,
+        formattedRemaining,
+        start,
+        pause,
+        stop,
+      })
+    : null
 
-      <div className="text-center font-mono text-3xl">{formatTime(remaining)}</div>
-
-      <div className="flex justify-center gap-2">
-        <button
-          onClick={start}
-          disabled={state === "running"}
-          className="rounded-2xl bg-green-500 px-4 py-2 text-white shadow disabled:opacity-50"
-        >
-          Start
-        </button>
-        <button
-          onClick={stop}
-          disabled={state !== "running"}
-          className="rounded-2xl bg-red-500 px-4 py-2 text-white shadow disabled:opacity-50"
-        >
-          Stop
-        </button>
-        <button
-          onClick={reset}
-          className="rounded-2xl bg-gray-300 px-4 py-2 text-gray-800 shadow"
-        >
-          Reset
-        </button>
-      </div>
-    </div>
-  )
+  return <>{content}</>
 }
+
+export { DURATION_MINUTES, DURATION_SECONDS }

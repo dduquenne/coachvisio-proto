@@ -13,7 +13,8 @@ type LoginPageProps = {
 }
 
 export default async function LoginPage({ searchParams }: LoginPageProps) {
-  const session = cookies().get(SESSION_COOKIE_NAME)
+  const cookieStore = await cookies()
+  const session = cookieStore.get(SESSION_COOKIE_NAME)
   if (session) {
     redirect("/")
   }
