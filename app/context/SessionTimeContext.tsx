@@ -10,7 +10,7 @@ import {
   useState,
 } from "react"
 
-const SESSION_DURATION_MS = 60 * 60 * 1000
+const SESSION_DURATION_MS = 15 * 60 * 1000
 const STORAGE_KEY = "coachvisio-session-remaining"
 const SESSION_STORAGE_KEY = "coachvisio-session-remaining-session"
 

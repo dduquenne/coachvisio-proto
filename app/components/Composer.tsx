@@ -1,15 +1,10 @@
 "use client"
 
-// 📝 Zone de composition des messages utilisateur.
-// Gère aussi le mode dictée vocale et la détection de silences prolongés.
-import {
-  useRef,
-  useState,
-  useEffect,
-  useCallback,
-  useMemo,
-} from "react"
-import type { KeyboardEvent, PointerEvent } from "react"
+// 📝 Zone de composition des messages utilisateur avec bascule vocale
+// persistante inspirée de la charte graphique de la landing page.
+import { useCallback, useEffect, useRef, useState } from "react"
+import { Mic, MicOff, SendHorizontal } from "lucide-react"
+
 import type { Message } from "./MessageList"
 
 type Props = {
@@ -18,42 +13,34 @@ type Props = {
   disabled?: boolean
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type SpeechRecognitionInstance = any
+
+type RecognitionResultEvent = {
+  results: ArrayLike<{
+    0: { transcript: string }
+  }>
+}
+
+type RecognitionErrorEvent = {
+  error: string
+}
+
 export default function Composer({ onSend, onSilence, disabled }: Props) {
   const [text, setText] = useState("")
   const [voiceMode, setVoiceMode] = useState(false)
-  const [audioLevel, setAudioLevel] = useState(0)
+  const [isListening, setIsListening] = useState(false)
   const voiceModeRef = useRef(false)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const recognitionRef = useRef<any>(null)
+  const recognitionRef = useRef<SpeechRecognitionInstance | null>(null)
   const silenceTimerRef = useRef<NodeJS.Timeout | null>(null)
-  const audioContextRef = useRef<AudioContext | null>(null)
-  const analyserRef = useRef<AnalyserNode | null>(null)
-  const mediaStreamRef = useRef<MediaStream | null>(null)
-  const animationFrameRef = useRef<number | null>(null)
-  const dataArrayRef = useRef<Uint8Array | null>(null)
-
-  // 🌐 Au montage, on teste la disponibilité de l'API Web Speech et on stocke
-  // la classe de reconnaissance pour pouvoir l'instancier plus tard.
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const SpeechRecognitionClass =
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (window as any).SpeechRecognition ||
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (window as any).webkitSpeechRecognition
-
-      if (SpeechRecognitionClass) {
-        recognitionRef.current = new SpeechRecognitionClass()
-      }
-    }
-  }, [])
+  const manualStopRef = useRef(false)
+  const suspendedRef = useRef(false)
 
   useEffect(() => {
     voiceModeRef.current = voiceMode
   }, [voiceMode])
 
-  // ✉️ Envoi manuel d'un message textuel classique.
-  const handleSend = () => {
+  const handleSend = useCallback(() => {
     if (!text.trim() || disabled) return
     onSend({
       id: Date.now().toString(),
@@ -61,9 +48,8 @@ export default function Composer({ onSend, onSilence, disabled }: Props) {
       content: text.trim(),
     })
     setText("")
-  }
+  }, [disabled, onSend, text])
 
-  // ⏱️ Relance automatique de l'IA après 10 secondes de silence en mode voix.
   const resetSilenceTimer = useCallback(() => {
     if (!voiceModeRef.current) return
     if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current)
@@ -80,125 +66,35 @@ export default function Composer({ onSend, onSilence, disabled }: Props) {
     }
   }, [])
 
-  const stopAudioMeter = useCallback(() => {
-    if (animationFrameRef.current) {
-      cancelAnimationFrame(animationFrameRef.current)
-      animationFrameRef.current = null
-    }
-    mediaStreamRef.current?.getTracks().forEach(track => track.stop())
-    mediaStreamRef.current = null
-    analyserRef.current = null
-    dataArrayRef.current = null
-    if (audioContextRef.current) {
-      audioContextRef.current.close().catch(() => null)
-      audioContextRef.current = null
-    }
-    setAudioLevel(0)
-  }, [])
+  const startRecognition = useCallback(() => {
+    if (!voiceModeRef.current || recognitionRef.current) return
+    if (typeof window === "undefined") return
 
-  const startAudioMeter = useCallback(async () => {
-    if (audioContextRef.current) return
-
-    try {
-      if (
-        typeof navigator === "undefined" ||
-        !navigator.mediaDevices ||
-        !navigator.mediaDevices.getUserMedia
-      ) {
-        throw new Error("Captation audio non supportée")
-      }
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-      mediaStreamRef.current = stream
-
-      const AudioContextClass =
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (window as any).AudioContext ||
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (window as any).webkitAudioContext
-
-      if (!AudioContextClass) {
-        throw new Error("AudioContext non disponible")
-      }
-
-      const audioContext: AudioContext = new AudioContextClass()
-      audioContextRef.current = audioContext
-      const source = audioContext.createMediaStreamSource(stream)
-      const analyser = audioContext.createAnalyser()
-      analyser.fftSize = 2048
-      analyserRef.current = analyser
-      source.connect(analyser)
-      const dataArray = new Uint8Array(analyser.frequencyBinCount)
-      dataArrayRef.current = dataArray
-
-      const update = () => {
-        if (!analyserRef.current || !dataArrayRef.current) return
-        analyserRef.current.getByteTimeDomainData(dataArrayRef.current)
-        let sumSquares = 0
-        for (let i = 0; i < dataArrayRef.current.length; i += 1) {
-          const value = (dataArrayRef.current[i] - 128) / 128
-          sumSquares += value * value
-        }
-        const rms = Math.sqrt(sumSquares / dataArrayRef.current.length)
-        setAudioLevel(rms)
-        animationFrameRef.current = requestAnimationFrame(update)
-      }
-
-      update()
-    } catch (error) {
-      stopAudioMeter()
-      throw error
-    }
-  }, [stopAudioMeter])
-
-  // 🎙️ Active l'écoute vocale tant que le bouton est maintenu.
-  // ⏹️ Arrête proprement la dictée vocale et le timer de silence.
-  const stopVoiceMode = useCallback(() => {
-    if (!voiceModeRef.current) return
-    voiceModeRef.current = false
-    setVoiceMode(false)
-    clearSilenceTimer()
-    recognitionRef.current?.stop()
-    recognitionRef.current = null
-    stopAudioMeter()
-  }, [clearSilenceTimer, stopAudioMeter])
-
-  const startVoiceMode = useCallback(async () => {
-    if (voiceModeRef.current || disabled) return
-    const SpeechRecognition =
+    const SpeechRecognitionClass =
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (window as any).SpeechRecognition ||
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (window as any).webkitSpeechRecognition
-    if (!SpeechRecognition) {
+
+    if (!SpeechRecognitionClass) {
       alert("La reconnaissance vocale n'est pas supportée par ce navigateur.")
-      return
-    }
-
-    voiceModeRef.current = true
-    setVoiceMode(true)
-
-    try {
-      await startAudioMeter()
-    } catch {
       voiceModeRef.current = false
       setVoiceMode(false)
-      alert(
-        "Impossible d'accéder au microphone. Vérifiez les permissions du navigateur."
-      )
       return
     }
 
-    if (!voiceModeRef.current) {
-      stopAudioMeter()
-      return
-    }
-
-    const recognition: SpeechRecognition = new SpeechRecognition()
+    const recognition: SpeechRecognitionInstance = new SpeechRecognitionClass()
     recognition.lang = "fr-FR"
     recognition.continuous = true
     recognition.interimResults = false
-    recognition.onresult = e => {
-      const result = e.results[e.results.length - 1]
+
+    recognition.onstart = () => {
+      setIsListening(true)
+      resetSilenceTimer()
+    }
+
+    recognition.onresult = (event: RecognitionResultEvent) => {
+      const result = event.results[event.results.length - 1]
       const transcript = result[0].transcript
       onSend({
         id: Date.now().toString(),
@@ -207,163 +103,165 @@ export default function Composer({ onSend, onSilence, disabled }: Props) {
       })
       resetSilenceTimer()
     }
-    recognition.onerror = event => {
-      if (event.error !== "no-speech") {
-        stopVoiceMode()
-      }
+
+    recognition.onerror = (event: RecognitionErrorEvent) => {
+      if (event.error === "no-speech") return
+      manualStopRef.current = true
+      voiceModeRef.current = false
+      setVoiceMode(false)
+      clearSilenceTimer()
+      recognition.stop()
     }
+
     recognition.onend = () => {
       recognitionRef.current = null
-      if (!voiceModeRef.current) {
-        setVoiceMode(false)
-        stopAudioMeter()
+      setIsListening(false)
+
+      if (manualStopRef.current) {
+        manualStopRef.current = false
+        clearSilenceTimer()
+        return
+      }
+
+      if (suspendedRef.current) {
+        return
+      }
+
+      if (voiceModeRef.current) {
+        startRecognition()
+      } else {
         clearSilenceTimer()
       }
     }
+
     recognitionRef.current = recognition
 
     try {
       recognition.start()
-      resetSilenceTimer()
     } catch {
-      stopVoiceMode()
+      manualStopRef.current = true
+      voiceModeRef.current = false
+      setVoiceMode(false)
     }
-  }, [
-    clearSilenceTimer,
-    disabled,
-    onSend,
-    resetSilenceTimer,
-    startAudioMeter,
-    stopAudioMeter,
-    stopVoiceMode,
-  ])
+  }, [clearSilenceTimer, onSend, resetSilenceTimer])
 
-  // Si l'utilisateur désactive l'envoi (timer arrêté), on coupe aussi la dictée.
+  const deactivateVoiceMode = useCallback(() => {
+    if (!voiceModeRef.current) return
+    voiceModeRef.current = false
+    setVoiceMode(false)
+    manualStopRef.current = true
+    suspendedRef.current = false
+    clearSilenceTimer()
+    recognitionRef.current?.stop()
+  }, [clearSilenceTimer])
+
+  const activateVoiceMode = useCallback(() => {
+    if (voiceModeRef.current || disabled) return
+    voiceModeRef.current = true
+    setVoiceMode(true)
+    manualStopRef.current = false
+    suspendedRef.current = false
+    startRecognition()
+  }, [disabled, startRecognition])
+
   useEffect(() => {
     if (disabled && voiceModeRef.current) {
-      stopVoiceMode()
+      deactivateVoiceMode()
     }
-  }, [disabled, stopVoiceMode])
+  }, [deactivateVoiceMode, disabled])
 
-  // 🔄 Suspension automatique de la dictée quand l'avatar parle pour éviter
-  // que la voix synthétique soit reconnue comme une entrée utilisateur.
   useEffect(() => {
     const handleSpeakingStart = () => {
-      if (voiceModeRef.current) {
-        stopVoiceMode()
-      }
+      if (!voiceModeRef.current || !recognitionRef.current) return
+      suspendedRef.current = true
+      recognitionRef.current.stop()
     }
+
+    const handleSpeakingEnd = () => {
+      if (!voiceModeRef.current) return
+      suspendedRef.current = false
+      manualStopRef.current = false
+      startRecognition()
+    }
+
     window.addEventListener("assistant-speaking-start", handleSpeakingStart)
+    window.addEventListener("assistant-speaking-end", handleSpeakingEnd)
+
     return () => {
       window.removeEventListener("assistant-speaking-start", handleSpeakingStart)
+      window.removeEventListener("assistant-speaking-end", handleSpeakingEnd)
     }
-  }, [stopVoiceMode])
+  }, [startRecognition])
 
   useEffect(() => {
     return () => {
-      stopVoiceMode()
+      voiceModeRef.current = false
+      recognitionRef.current?.stop()
+      clearSilenceTimer()
     }
-  }, [stopVoiceMode])
-
-  const audioLevelWidth = useMemo(() => {
-    if (!voiceMode) return "0%"
-    const normalized = Math.min(1, audioLevel * 4)
-    return `${Math.max(0.05, normalized) * 100}%`
-  }, [audioLevel, voiceMode])
-
-  const voiceButtonHandlers = {
-    onPointerDown: (event: PointerEvent<HTMLButtonElement>) => {
-      if (disabled) return
-      if (event.pointerType === "mouse" && event.button !== 0) return
-      event.preventDefault()
-      void startVoiceMode()
-    },
-    onPointerUp: (event: PointerEvent<HTMLButtonElement>) => {
-      if (disabled) return
-      event.preventDefault()
-      stopVoiceMode()
-    },
-    onPointerLeave: (event: PointerEvent<HTMLButtonElement>) => {
-      if (disabled) return
-      if (event.pointerType === "mouse") {
-        stopVoiceMode()
-      }
-    },
-    onPointerCancel: () => {
-      if (disabled) return
-      stopVoiceMode()
-    },
-    onKeyDown: (event: KeyboardEvent<HTMLButtonElement>) => {
-      if (disabled) return
-      if (event.key === " " || event.key === "Enter") {
-        event.preventDefault()
-        void startVoiceMode()
-      }
-    },
-    onKeyUp: (event: KeyboardEvent<HTMLButtonElement>) => {
-      if (disabled) return
-      if (event.key === " " || event.key === "Enter") {
-        event.preventDefault()
-        stopVoiceMode()
-      }
-    },
-  }
+  }, [clearSilenceTimer])
 
   return (
-    <div className="flex w-full flex-col gap-2">
-      <div
-        className={`flex items-center gap-3 rounded-full border bg-white px-4 py-3 shadow transition-opacity ${
-          disabled ? "opacity-60" : ""
-        }`}
-      >
+    <div className="space-y-3 rounded-3xl border border-white/15 bg-white/10 p-6 text-white shadow-2xl shadow-cyan-500/10 backdrop-blur">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
         <button
           type="button"
+          onClick={voiceMode ? deactivateVoiceMode : activateVoiceMode}
           disabled={disabled}
-          className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 ${
+          className={`inline-flex items-center gap-2 rounded-full px-5 py-2 text-sm font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-indigo-300 focus-visible:ring-offset-transparent ${
             voiceMode
-              ? "bg-red-100 text-red-700"
-              : "bg-blue-50 text-blue-700 hover:bg-blue-100"
-          }`}
-          {...voiceButtonHandlers}
+              ? "bg-rose-500/90 text-white shadow-lg shadow-rose-500/40"
+              : "bg-indigo-500/80 text-white shadow-lg shadow-indigo-500/40 hover:bg-indigo-500"
+          } disabled:cursor-not-allowed disabled:opacity-60`}
         >
-          {voiceMode ? "Enregistrement…" : "Maintenir pour parler"}
+          {voiceMode ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+          {voiceMode
+            ? isListening
+              ? "Mode vocal actif"
+              : "Mode vocal en pause"
+            : "Activer le mode vocal"}
         </button>
-        <div className="flex h-8 items-center">
-          <div className="h-2 w-16 rounded-full bg-gray-200">
-            <div
-              className="h-full rounded-full bg-red-500 transition-[width] duration-75 ease-out"
-              style={{ width: audioLevelWidth }}
-            />
-          </div>
-        </div>
-        <input
-          type="text"
-          value={text}
-          onChange={e => setText(e.target.value)}
-          onKeyDown={e => {
-            if (e.key === "Enter" && !e.shiftKey) {
-              e.preventDefault()
-              handleSend()
+
+        <div className="flex flex-1 items-center gap-3 rounded-full border border-white/10 bg-white/5 px-5 py-3 shadow-inner shadow-cyan-500/20">
+          <input
+            type="text"
+            value={text}
+            onChange={event => setText(event.target.value)}
+            onKeyDown={event => {
+              if (event.key === "Enter" && !event.shiftKey) {
+                event.preventDefault()
+                handleSend()
+              }
+            }}
+            placeholder={
+              disabled
+                ? "⏱️ Lancez la simulation pour commencer"
+                : "Écrivez votre réponse..."
             }
-          }}
-          placeholder={
-            disabled ? "⏱️ Lancez le timer pour commencer" : "Écrire un message..."
-          }
-          disabled={disabled}
-          className="flex-1 border-none bg-transparent text-sm focus:outline-none"
-        />
-        <button
-          onClick={handleSend}
-          disabled={disabled}
-          className="rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow disabled:opacity-50"
-        >
-          Envoyer
-        </button>
+            disabled={disabled}
+            className="flex-1 bg-transparent text-sm text-white placeholder:text-white/60 focus:outline-none"
+          />
+          <button
+            type="button"
+            onClick={handleSend}
+            disabled={disabled}
+            className="inline-flex items-center gap-2 rounded-full bg-cyan-500/90 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-cyan-500/40 transition hover:bg-cyan-400 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            Envoyer
+            <SendHorizontal className="h-4 w-4" />
+          </button>
+        </div>
       </div>
 
+      {voiceMode && (
+        <p className="text-xs text-white/70">
+          🎤 Le microphone reste actif tant que vous ne repassez pas en saisie texte.
+        </p>
+      )}
+
       {disabled && (
-        <p className="flex items-center gap-1 text-sm text-red-600">
-          ⏱️ Lancez le timer pour commencer l’entretien
+        <p className="flex items-center gap-1 text-sm font-medium text-rose-200">
+          ⏱️ Lancez la simulation pour échanger avec l’avatar.
         </p>
       )}
     </div>
