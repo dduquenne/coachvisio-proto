@@ -135,22 +135,23 @@ export default function LiveReportPage() {
               </div>
 
               <div className="max-h-[60vh] overflow-y-auto rounded-2xl border border-white/10 bg-slate-900/30 p-6 shadow-inner shadow-cyan-500/20">
-                <ReactMarkdown
-                  className="prose prose-invert max-w-none text-white/90"
-                  components={{
-                    h1: props => (
-                      <h1 className="text-2xl font-semibold text-white" {...props} />
-                    ),
-                    h2: props => (
-                      <h2 className="mt-6 text-xl font-semibold text-white" {...props} />
-                    ),
-                    ul: props => (
-                      <ul className="list-disc space-y-2 pl-6 text-white/90" {...props} />
-                    ),
-                  }}
-                >
-                  {data.summary}
-                </ReactMarkdown>
+                <div className="prose prose-invert max-w-none text-white/90">
+                  <ReactMarkdown
+                    components={{
+                      h1: props => (
+                        <h1 className="text-2xl font-semibold text-white" {...props} />
+                      ),
+                      h2: props => (
+                        <h2 className="mt-6 text-xl font-semibold text-white" {...props} />
+                      ),
+                      ul: props => (
+                        <ul className="list-disc space-y-2 pl-6 text-white/90" {...props} />
+                      ),
+                    }}
+                  >
+                    {data.summary}
+                  </ReactMarkdown>
+                </div>
               </div>
             </section>
 
