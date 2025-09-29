@@ -41,7 +41,13 @@ export default function LiveReportPage() {
 
     if (typeof window === "undefined") return
 
-    const raw = window.sessionStorage.getItem(storageKey)
+    let raw: string | null = null
+    try {
+      raw = window.localStorage.getItem(storageKey)
+    } catch {
+      setError("Impossible de lire les données du bilan.")
+      return
+    }
     if (!raw) {
       setError("Les données du bilan sont introuvables ou ont expiré.")
       return
@@ -54,7 +60,7 @@ export default function LiveReportPage() {
       setError("Impossible de lire les données du bilan.")
       return
     } finally {
-      window.sessionStorage.removeItem(storageKey)
+      window.localStorage.removeItem(storageKey)
     }
   }, [storageKey])
 
