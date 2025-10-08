@@ -10,7 +10,7 @@ Tu es Codex, assisté de la fonction `Plan`. Ta mission est de générer **l'int
 2. **Contexte technique de référence**
    - Stack : Next.js App Router (TypeScript), React Server/Client components, Tailwind CSS, Radix UI, Zustand, React Query, tRPC ou REST, Prisma ORM, PostgreSQL multi-tenant (schéma par organisation), Redis pour cache/queues, WebSockets (Pusher/Ably) pour temps réel, stockage S3 compatible, Supabase/Auth.js pour auth, Stripe Billing, Playwright + Vitest.
    - Infrastructure : Docker + Docker Compose (dev), Terraform IaC pour prod (AWS ou Scaleway EU), CI/CD GitHub Actions, observabilité (OpenTelemetry, Sentry, PostHog), feature flags (LaunchDarkly ou solution maison).
-   - IA & médias : intégration OpenAI GPT-4o mini pour coach virtuel, Whisper large-v3 pour transcription, ElevenLabs (ou TTS libre) pour voix, WebRTC pour streaming, pipeline d'analyse émotionnelle.
+   - IA & médias : intégration OpenAI GPT-4o mini pour coach virtuel, Whisper large-v3 pour transcription, ElevenLabs (ou TTS libre) pour voix, WebRTC pour streaming, pipeline d'analyse émotionnelle, avatars interactifs HeyGen (API Interactive Avatar) pour rendre les simulations plus immersives.
 
 3. **Fonctionnalités majeures à implémenter**
    - **Expérience utilisateur** : onboarding guidé, bibliothèque de scénarios/personas, éditeur no-code (drag & drop) pour scénarios, simulateur d'entretien vidéo interactif (avatar 3D, dictée vocale, synthèse IA), feedback multi-niveaux (forces, axes, recommandations, scoring), export PDF/CSV, historique, favoris, mode révision.
@@ -30,12 +30,12 @@ Tu es Codex, assisté de la fonction `Plan`. Ta mission est de générer **l'int
         - Tableau de bord admin avec checklist de tâches, carte d'avancement onboarding, notifications en temps réel.
      3. **Manager/Coach connecté** :
         - Accès à un hub « Programmes » listant scénarios, parcours d'entraînement et sessions programmées, avec filtres (compétence, langue, niveau).
-        - Éditeur visuel de scénarios avec timeline, script IA, paramètres émotionnels, pièces jointes, logiques conditionnelles.
+        - Éditeur visuel de scénarios avec timeline, script IA, paramètres émotionnels, pièces jointes, logiques conditionnelles, sélection et personnalisation des avatars interactifs HeyGen (voix, langage corporel, look & feel).
         - Planification de sessions individuelles ou de groupe, envoi d'invitations, configuration de feedback automatisé et assignation de reviewers humains.
         - Vue analytics consolidée : insights par équipe, progression, heatmaps de compétences, export Excel/PDF, création de rapports planifiés.
      4. **Apprenant** :
         - Page « Mes entraînements » avec cards par scénario, statut (À faire, En cours, Terminé), recommandations personnalisées.
-        - Flow de simulation : préparation (objectifs, ressources), lancement WebRTC (avatar IA, script adaptatif, reconnaissance émotions), capture audio/vidéo, suggestions en direct.
+        - Flow de simulation : préparation (objectifs, ressources), lancement WebRTC (avatar IA HeyGen, script adaptatif, reconnaissance émotions), capture audio/vidéo, suggestions en direct.
         - Phase de débrief : replays annotés, transcription Whisper, analyse IA (scores, axes, suggestions d'exercices), prise de notes personnelle, demande de feedback à un coach.
         - Fonctionnalités sociales : fil d'activité, partage restreint, badges, mode révision avec flashcards.
      5. **Support & auto-assistance** :
