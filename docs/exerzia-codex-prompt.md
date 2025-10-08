@@ -19,6 +19,35 @@ Tu es Codex, assisté de la fonction `Plan`. Ta mission est de générer **l'int
    - **Support & conformité** : centre d'aide, système ticketing, base de connaissances, consentements RGPD, anonymisation, politique rétention, audit logs, SSO (SAML/SCIM), RBAC hiérarchique, double authentification.
    - **Intégrations** : API publique (REST + webhooks), connecteurs LMS/ATS (SCORM/xAPI), Zapier, import/export CSV, SDK JS/TS.
    - **Opérations** : monitoring 24/7, statut service, alertes on-call, PCA/PRA, scripts migration DB, seed data, tests E2E, linting, storybook.
+   - **Parcours & navigation détaillés** (Exerzia est une solution entièrement nouvelle ; ne présume pas la connaissance de CoachVisio) :
+     1. **Visiteur non authentifié** :
+        - Page d'accueil présentant valeur, démonstrations vidéo, CTA vers essai gratuit/démo, sections témoignages et sécurité.
+        - Navigation publique : pages Fonctionnalités, Tarifs (Starter/Pro/Entreprise), Blog/Resources, Confiance & conformité, Page statut.
+        - Formulaire « Demander une démo » reliant au CRM, landing pages sectorielles, FAQ dynamique.
+     2. **Création de compte & onboarding administrateur** :
+        - Flux d'inscription email/password ou SSO entreprise, vérification email, création d'organisation, sélection du plan et configuration de facturation (essai gratuit par défaut).
+        - Assistant de configuration en 5 étapes : définition des objectifs, import des collaborateurs (CSV/ATS), choix des compétences cibles, personnalisation de la marque (logo/couleurs), activation des modules IA.
+        - Tableau de bord admin avec checklist de tâches, carte d'avancement onboarding, notifications en temps réel.
+     3. **Manager/Coach connecté** :
+        - Accès à un hub « Programmes » listant scénarios, parcours d'entraînement et sessions programmées, avec filtres (compétence, langue, niveau).
+        - Éditeur visuel de scénarios avec timeline, script IA, paramètres émotionnels, pièces jointes, logiques conditionnelles.
+        - Planification de sessions individuelles ou de groupe, envoi d'invitations, configuration de feedback automatisé et assignation de reviewers humains.
+        - Vue analytics consolidée : insights par équipe, progression, heatmaps de compétences, export Excel/PDF, création de rapports planifiés.
+     4. **Apprenant** :
+        - Page « Mes entraînements » avec cards par scénario, statut (À faire, En cours, Terminé), recommandations personnalisées.
+        - Flow de simulation : préparation (objectifs, ressources), lancement WebRTC (avatar IA, script adaptatif, reconnaissance émotions), capture audio/vidéo, suggestions en direct.
+        - Phase de débrief : replays annotés, transcription Whisper, analyse IA (scores, axes, suggestions d'exercices), prise de notes personnelle, demande de feedback à un coach.
+        - Fonctionnalités sociales : fil d'activité, partage restreint, badges, mode révision avec flashcards.
+     5. **Support & auto-assistance** :
+        - Bouton persistant d'aide ouvrant centre self-service (guides, vidéos, chatbot IA relié à la base de connaissances).
+        - Création et suivi de tickets, SLA affichés, escalade vers live chat ou visio.
+     6. **Administration avancée** :
+        - Paramètres organisation (domaines autorisés, politiques sécurité, provisioning SCIM, webhooks, API keys).
+        - Gestion des licences, segmentation multi-espaces (filiales), audit trail consultable et exportable.
+        - MarketPlace d'intégrations activables en un clic, configuration fine des rôles et permissions.
+     7. **Accessibilité et mobilité** :
+        - Responsive design mobile/tablette, mode hors connexion partiel pour consultation des feedbacks, support PWA.
+        - Options d'accessibilité : sous-titres temps réel, lecteur d'écran, contrastes élevés, raccourcis clavier.
 
 4. **Livrables attendus**
    - Projet complet prêt pour déploiement (code, configs, documentation, scripts).
