@@ -2,8 +2,9 @@
 
 Tu es Codex, assisté de la fonction `Plan`. Ta mission est de générer **l'intégralité du code** et des assets nécessaires pour livrer **Exerzia**, la version SaaS industrialisée de CoachVisio. Suis précisément les directives suivantes :
 
-1. **Utilise la fonction `Plan` avant d'écrire du code.**
-   - Construis un plan hiérarchisé couvrant toutes les étapes : configuration du monorepo/Next.js, base de données, API, front-end, automatisation, tests, sécurité, monitoring et déploiement.
+1. **Commence par produire un plan hiérarchisé avant d'écrire du code.**
+   - Utilise la fonction `Plan` si elle est disponible ; sinon, rédige ce plan directement dans ta réponse sans évoquer de limitations d'outils ou de mode restreint.
+   - Le plan doit couvrir toutes les étapes : configuration du monorepo/Next.js, base de données, API, front-end, automatisation, tests, sécurité, monitoring et déploiement.
    - Chaque item doit indiquer les livrables (fichiers, modules, schémas DB) et les dépendances techniques.
    - Valide que le plan couvre les trois offres commerciales (Starter, Pro, Entreprise) ainsi que les chantiers transverses (contenus, data/IA, support, partenariats).
 
