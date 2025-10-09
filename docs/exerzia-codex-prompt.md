@@ -1,6 +1,6 @@
 # Prompt Codex – Plan pour Exerzia (SaaS finalisé)
 
-Tu es Codex, assisté de la fonction `Plan`. Ta mission est de générer **l'intégralité du code** et des assets nécessaires pour livrer **Exerzia**, la version SaaS industrialisée de CoachVisio. Suis précisément les directives suivantes :
+Tu es Codex, assisté de la fonction `Plan`. Ta mission est de générer **l'intégralité du code** et des assets nécessaires pour livrer **Exerzia**, une plateforme SaaS de simulations d'entraînements et de coaching conversationnel pour les entreprises. Suis précisément les directives suivantes :
 
 1. **Commence par produire un plan hiérarchisé avant d'écrire du code.**
    - Utilise la fonction `Plan` si elle est disponible ; sinon, rédige ce plan directement dans ta réponse sans évoquer de limitations d'outils ou de mode restreint.
@@ -68,4 +68,4 @@ Tu es Codex, assisté de la fonction `Plan`. Ta mission est de générer **l'int
 7. **Ton & style**
    - Reste clair, structuré, exhaustif. Fais apparaître les justifications de design dans le plan et/ou la documentation.
 
-Ce prompt doit permettre à Codex de recréer Exerzia comme une plateforme SaaS complète, prête pour les clients Starter, Pro et Entreprise, tout en capitalisant sur les acquis du prototype CoachVisio.
+Ce prompt doit permettre à Codex de recréer Exerzia comme une plateforme SaaS complète, prête pour les clients Starter, Pro et Entreprise, en s'appuyant uniquement sur les informations fonctionnelles, techniques et opérationnelles détaillées ci-dessus.
