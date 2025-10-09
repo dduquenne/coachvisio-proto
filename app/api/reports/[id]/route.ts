@@ -5,9 +5,9 @@ import { getReportFile } from "@/app/lib/reports"
 
 export const GET = async (
   request: NextRequest,
-  { params }: { params: { id: string } },
+  context: { params: Promise<{ id: string }> },
 ) => {
-  const { id } = params
+  const { id } = await context.params
   const reportFile = await getReportFile(id)
 
   if (!reportFile) {
